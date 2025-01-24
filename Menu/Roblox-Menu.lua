@@ -15,8 +15,8 @@ local TopButtonGradient = Instance.new("UIGradient")
 
 -- Scripts configuration
 local scripts = {
-    {name = "🔥 Aim Menu", loadstring = "loadstring(game:HttpGet('https://raw.githubusercontent.com/SYFER-eng/Random-Code/refs/heads/main/Code/Lua/AimMenu.lua'))()"},
-    {name = "⚡ Speed Hacks", loadstring = "loadstring(game:HttpGet('https://raw.githubusercontent.com/SYFER-eng/Random-Code/refs/heads/main/Code/Lua/Roblox-Speed-Hack.lua'))()"},
+    {name = "🔥 Aim Menu", loadstring = "loadstring(game:HttpGet('https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/AimMenu.lua'))()"},
+    {name = "⚡ Speed Hacks", loadstring = "loadstring(game:HttpGet('https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Roblox-Speed-Hack.lua'))()"},
     {name = "💫 Script 3", loadstring = "loadstring(game:HttpGet('https://example.com/script3.lua'))()"},
     {name = "🌟 Script 4", loadstring = "loadstring(game:HttpGet('https://example.com/script4.lua'))()"}
 }
