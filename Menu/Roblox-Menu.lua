@@ -165,7 +165,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 0, 0, 10)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "✨ Syfer-eng │ Script Hub ✨"
+Title.Text = "Syfer-eng │ Script Hub"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 24
 
@@ -183,7 +183,40 @@ UIListLayout.Parent = ButtonHolder
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- **New Button at Bottom to Toggle Menu Visibility**
+-- **Close Button at Top Right of the Menu**
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Parent = MainFrame
+closeButton.BackgroundTransparency = 1  -- No background
+closeButton.Size = UDim2.new(0, 30, 0, 30)  -- Smaller size (30x30)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 18  -- Smaller text size
+
+-- Position the button at the top-right of the screen
+closeButton.Position = UDim2.new(1, -35, 0, 5)  -- 5px padding from the top-right corner
+closeButton.ZIndex = 999999  -- Ensure this button is on top of everything else
+
+-- Close Button Click Handler
+closeButton.MouseButton1Click:Connect(function()
+    -- Fade out the GUI with an animation before unloading
+    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.InOut)
+    createTween(MainFrame, tweenInfo, {
+        BackgroundTransparency = 1
+    })
+
+    -- Wait for the animation to finish
+    wait(tweenInfo.Time)
+
+    -- Destroy the ScreenGui and all its children
+    ScreenGui:Destroy()
+
+    -- Optionally, you can print to console that the script has been unloaded
+    print("Script has been unloaded and GUI removed.")
+end)
+
+-- **New Button at Bottom to Toggle Menu Visibility with PgDn/PageDown**
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleButton"
 toggleButton.Parent = MainFrame
@@ -197,22 +230,6 @@ toggleButton.TextSize = 14  -- Smaller text size
 -- Position the button at the bottom of the screen
 toggleButton.Position = UDim2.new(0.5, -100, 1, -60)  -- Center the button horizontally and 60px from the bottom
 toggleButton.ZIndex = 999999  -- Ensure this button is on top of everything else
-
--- Button Click Handler to toggle visibility
-toggleButton.MouseButton1Click:Connect(function()
-    -- Toggle the menu visibility when clicked
-    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.InOut)
-    local targetTransparency = menuVisible and 1 or 0  -- Fade out if visible, fade in if hidden
-
-    -- Create the fade animation for the menu
-    createTween(MainFrame, tweenInfo, {
-        BackgroundTransparency = targetTransparency
-    })
-
-    -- Toggle the visibility after animation
-    menuVisible = not menuVisible
-    MainFrame.Visible = menuVisible  -- Toggle actual visibility (to stop interaction when hidden)
-end)
 
 -- Page Down Key Toggle Functionality (Hide/Unhide)
 local menuVisible = true
