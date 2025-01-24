@@ -8,10 +8,8 @@ local UICorner = Instance.new("UICorner")
 local Title = Instance.new("TextLabel")
 local ButtonHolder = Instance.new("ScrollingFrame")
 local UIListLayout = Instance.new("UIListLayout")
-local TopButton = Instance.new("Frame")
-local UIGradient = Instance.new("UIGradient")
 local Shadow = Instance.new("ImageLabel")
-local TopButtonGradient = Instance.new("UIGradient")
+local UIGradient = Instance.new("UIGradient")
 
 -- Scripts configuration
 local scripts = {
@@ -26,63 +24,105 @@ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Setup TopButton
-TopButton.Name = "TopButton"
-TopButton.Parent = ScreenGui
-TopButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TopButton.Position = UDim2.new(0.5, -25, 0, 10)
-TopButton.Size = UDim2.new(0, 50, 0, 50)
-TopButton.ClipsDescendants = true
+-- Function to Create and Apply Tweens
+local function createTween(target, tweenInfo, goal)
+    local tween = TweenService:Create(target, tweenInfo, goal)
+    tween:Play()
+    return tween
+end
 
--- Add corner to TopButton
-local TopButtonCorner = Instance.new("UICorner")
-TopButtonCorner.CornerRadius = UDim.new(0, 8)
-TopButtonCorner.Parent = TopButton
+-- Function to create Button with hover and click effects
+local function createScriptButton(scriptData)
+    local button = Instance.new("TextButton")
+    button.Name = "ScriptButton"
+    button.Parent = ButtonHolder
+    button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    button.Size = UDim2.new(1, 0, 0, 50)
+    button.Font = Enum.Font.GothamBold
+    button.Text = scriptData.name
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 16
+    
+    -- Apply Gradient
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 180)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(45, 45, 150))
+    })
+    buttonGradient.Parent = button
 
--- Setup rainbow gradient for TopButton
-TopButtonGradient.Parent = TopButton
+    -- Apply Corner
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
 
--- Rainbow effect
-spawn(function()
-    while wait() do
-        for i = 0, 1, 0.001 do
-            TopButtonGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromHSV(i, 1, 1)),
-                ColorSequenceKeypoint.new(1, Color3.fromHSV(i + 0.2, 1, 1))
-            }
-            wait()
-        end
-    end
-end)
+    -- Button Hover Effect
+    button.MouseEnter:Connect(function()
+        createTween(button, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(70, 70, 200),
+            TextSize = 18
+        })
+    end)
+    
+    button.MouseLeave:Connect(function()
+        createTween(button, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+            TextSize = 16
+        })
+    end)
+    
+    -- Button Click Handler with Ripple Effect
+    button.MouseButton1Click:Connect(function()
+        loadstring(scriptData.loadstring)()
 
--- Make TopButton draggable
-local draggingTop = false
-local dragStartTop
-local startPosTop
+        -- Create ripple effect
+        local ripple = Instance.new("Frame")
+        ripple.Parent = button
+        ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        ripple.BackgroundTransparency = 0.6
+        ripple.Position = UDim2.new(0, 0, 0, 0)
+        ripple.Size = UDim2.new(0, 0, 1, 0)
 
-TopButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        draggingTop = true
-        dragStartTop = input.Position
-        startPosTop = TopButton.Position
+        local rippleTween = createTween(ripple, TweenInfo.new(0.5), {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1
+        })
         
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                draggingTop = false
-            end
+        rippleTween.Completed:Connect(function()
+            ripple:Destroy()
         end)
+    end)
+end
+
+-- Create Script Buttons for each script
+for _, scriptData in ipairs(scripts) do
+    createScriptButton(scriptData)
+end
+
+-- **Fixed Dragging for MainFrame**: The drag logic for the entire `MainFrame`, not the `TopButton`.
+local dragging = false
+local dragStart
+local startPos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
     end
 end)
 
-TopButton.InputChanged:Connect(function(input)
-    if draggingTop and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStartTop
-        TopButton.Position = UDim2.new(
-            startPosTop.X.Scale,
-            startPosTop.X.Offset + delta.X,
-            startPosTop.Y.Scale,
-            startPosTop.Y.Offset + delta.Y
-        )
+MainFrame.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        -- Update position based on mouse movement (delta)
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+MainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
     end
 end)
 
@@ -141,130 +181,21 @@ UIListLayout.Parent = ButtonHolder
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- TopButton Toggle Functionality
+-- Page Down Key Toggle Functionality (Hide/Unhide)
 local menuVisible = true
-TopButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if menuVisible then
-            local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-            local minimizeTween = TweenService:Create(MainFrame, tweenInfo, {
-                Size = UDim2.new(0, 50, 0, 50),
-                Position = TopButton.Position,
-                BackgroundTransparency = 1
-            })
-            minimizeTween:Play()
-            wait(0.6)
-            MainFrame.Visible = false
-        else
-            MainFrame.Position = TopButton.Position
-            MainFrame.Size = UDim2.new(0, 50, 0, 50)
-            MainFrame.BackgroundTransparency = 1
-            MainFrame.Visible = true
-            
-            local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-            local maximizeTween = TweenService:Create(MainFrame, tweenInfo, {
-                Size = UDim2.new(0, 300, 0, 400),
-                Position = UDim2.new(0.5, -150, 0.5, -200),
-                BackgroundTransparency = 0
-            })
-            maximizeTween:Play()
-        end
-        menuVisible = not menuVisible
-    end
-end)
 
--- Create Script Buttons
-for i, scriptData in ipairs(scripts) do
-    local button = Instance.new("TextButton")
-    button.Name = "ScriptButton" .. i
-    button.Parent = ButtonHolder
-    button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    button.Size = UDim2.new(1, 0, 0, 50)
-    button.Font = Enum.Font.GothamBold
-    button.Text = scriptData.name
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 16
-    
-    local buttonGradient = Instance.new("UIGradient")
-    buttonGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 180)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(45, 45, 150))
-    })
-    buttonGradient.Parent = button
-    
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = button
-    
-    -- Button Hover Effect
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(70, 70, 200),
-            TextSize = 18
-        }):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(45, 45, 45),
-            TextSize = 16
-        }):Play()
-    end)
-    
-    -- Button Click Handler
-    button.MouseButton1Click:Connect(function()
-        loadstring(scriptData.loadstring)()
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.PageDown then
+        local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.InOut)
+        local targetTransparency = menuVisible and 1 or 0  -- Fade out if visible, fade in if hidden
         
-        -- Create ripple effect
-        local ripple = Instance.new("Frame")
-        ripple.Parent = button
-        ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        ripple.BackgroundTransparency = 0.6
-        ripple.Position = UDim2.new(0, 0, 0, 0)
-        ripple.Size = UDim2.new(0, 0, 1, 0)
-        
-        local rippleTween = TweenService:Create(ripple, TweenInfo.new(0.5), {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1
+        -- Create the fade animation for the menu
+        createTween(MainFrame, tweenInfo, {
+            BackgroundTransparency = targetTransparency
         })
-        
-        rippleTween:Play()
-        rippleTween.Completed:Connect(function()
-            ripple:Destroy()
-        end)
-    end)
-end
 
--- MainFrame Dragging Functionality
-local dragging, dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
+        -- Toggle the visibility after animation
+        menuVisible = not menuVisible
+        MainFrame.Visible = menuVisible  -- Toggle actual visibility (to stop interaction when hidden)
     end
 end)
