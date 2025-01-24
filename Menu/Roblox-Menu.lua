@@ -23,6 +23,7 @@ local scripts = {
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true  -- Ensures this GUI isn't affected by default UI
 
 -- Function to Create and Apply Tweens
 local function createTween(target, tweenInfo, goal)
@@ -131,8 +132,9 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Size = UDim2.new(0, 317, 0, 400)
 MainFrame.ClipsDescendants = true
+MainFrame.ZIndex = 999999  -- Ensure the menu is above all other UI elements
 
 -- Setup Gradient
 UIGradient.Color = ColorSequence.new({
@@ -163,7 +165,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 0, 0, 10)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "✨ Script Hub ✨"
+Title.Text = "✨ Syfer-eng │ Script Hub ✨"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 24
 
@@ -180,6 +182,37 @@ ButtonHolder.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 UIListLayout.Parent = ButtonHolder
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- **New Button at Bottom to Toggle Menu Visibility**
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Parent = MainFrame
+toggleButton.BackgroundTransparency = 1  -- No background
+toggleButton.Size = UDim2.new(0, 200, 0, 40)  -- Smaller size (200x40)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Text = "Press PgDn/Page Down To Hide"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 14  -- Smaller text size
+
+-- Position the button at the bottom of the screen
+toggleButton.Position = UDim2.new(0.5, -100, 1, -60)  -- Center the button horizontally and 60px from the bottom
+toggleButton.ZIndex = 999999  -- Ensure this button is on top of everything else
+
+-- Button Click Handler to toggle visibility
+toggleButton.MouseButton1Click:Connect(function()
+    -- Toggle the menu visibility when clicked
+    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.InOut)
+    local targetTransparency = menuVisible and 1 or 0  -- Fade out if visible, fade in if hidden
+
+    -- Create the fade animation for the menu
+    createTween(MainFrame, tweenInfo, {
+        BackgroundTransparency = targetTransparency
+    })
+
+    -- Toggle the visibility after animation
+    menuVisible = not menuVisible
+    MainFrame.Visible = menuVisible  -- Toggle actual visibility (to stop interaction when hidden)
+end)
 
 -- Page Down Key Toggle Functionality (Hide/Unhide)
 local menuVisible = true
