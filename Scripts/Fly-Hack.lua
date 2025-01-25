@@ -195,6 +195,24 @@ local function stopFlying()
     end
 end
 
+-- Unload Script Logic (including stop fly)
+unloadButton.MouseButton1Click:Connect(function()
+    -- Stop flying if it's active
+    if flying then
+        stopFlying()
+        flyButton.Text = "Start Fly"
+    end
+    
+    -- Reset WalkSpeed in case it was modified by the script
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+    
+    -- Destroy the GUI to unload the script
+    screenGui:Destroy()
+end)
+
 -- Comet Effect
 local function createComet()
     local comet = Instance.new("Frame")
@@ -282,15 +300,6 @@ controlsTab.MouseButton1Click:Connect(function()
     flyFrame.Visible = false
     unloadFrame.Visible = false
     controlsFrame.Visible = true
-end)
-
--- Unload Script Logic
-unloadButton.MouseButton1Click:Connect(function()
-    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = 16
-    end
-    screenGui:Destroy()
 end)
 
 -- Toggle GUI Visibility with Insert
