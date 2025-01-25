@@ -2,6 +2,7 @@ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local tweenService = game:GetService("TweenService")
 local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 
 -- GUI Creation
 local screenGui = Instance.new("ScreenGui")
@@ -142,23 +143,83 @@ local button3Corner = Instance.new("UICorner")
 button3Corner.CornerRadius = UDim.new(0, 8)
 button3Corner.Parent = button3
 
--- Tab Switching Logic
+-- Tab Switching Logic with Animations
+local function showTab(tabFrame)
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local goal = {Position = UDim2.new(0, 200, 0, 0)}
+    tweenService:Create(tabFrame, tweenInfo, goal):Play()
+end
+
 tab1.MouseButton1Click:Connect(function()
     tab1Frame.Visible = true
     tab2Frame.Visible = false
     tab3Frame.Visible = false
+    showTab(tab1Frame)
 end)
 
 tab2.MouseButton1Click:Connect(function()
     tab1Frame.Visible = false
     tab2Frame.Visible = true
     tab3Frame.Visible = false
+    showTab(tab2Frame)
 end)
 
 tab3.MouseButton1Click:Connect(function()
     tab1Frame.Visible = false
     tab2Frame.Visible = false
     tab3Frame.Visible = true
+    showTab(tab3Frame)
+end)
+
+-- Comet Effect
+local function createComet()
+    local comet = Instance.new("Frame")
+    comet.Size = UDim2.new(0, 4, 0, 4)
+    comet.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    comet.BorderSizePixel = 0
+    comet.Parent = mainWindow
+    
+    for i = 1, 5 do
+        local trail = Instance.new("Frame")
+        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
+        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
+        trail.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        trail.BackgroundTransparency = 0.2 * i
+        trail.BorderSizePixel = 0
+        trail.Parent = comet
+        
+        local glow = Instance.new("ImageLabel")
+        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
+        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
+        glow.BackgroundTransparency = 1
+        glow.Image = "rbxassetid://7331079227"
+        glow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        glow.ImageTransparency = 0.5 + (0.1 * i)
+        glow.Parent = trail
+    end
+    
+    local startX = math.random(-50, 0)
+    local startY = math.random(0, mainWindow.AbsoluteSize.Y)
+    comet.Position = UDim2.new(0, startX, 0, startY)
+    
+    local endX = mainWindow.AbsoluteSize.X + 50
+    local endY = startY + math.random(100, 200)
+    
+    local tweenInfo = TweenInfo.new(
+        math.random(8, 12) / 10,
+        Enum.EasingStyle.Linear
+    )
+    local goal = {Position = UDim2.new(0, endX, 0, endY)}
+    tweenService:Create(comet, tweenInfo, goal):Play()
+    
+    comet:Destroy()
+end
+
+-- Create Random Comets Every Few Seconds
+runService.Heartbeat:Connect(function()
+    if math.random() < 0.02 then
+        createComet()
+    end
 end)
 
 -- Toggle GUI Visibility with Insert key
