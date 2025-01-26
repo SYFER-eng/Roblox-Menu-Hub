@@ -11,10 +11,11 @@ local startPos = nil
 -- Color Scheme
 local COLORS = {
     BACKGROUND = Color3.fromRGB(20, 20, 25),
-    ACCENT = Color3.fromRGB(147, 112, 219),
+    ACCENT = Color3.fromRGB(175, 74, 235),
     TEXT = Color3.fromRGB(255, 255, 255),
     HIGHLIGHT = Color3.fromRGB(160, 120, 240),
-    DARK_ACCENT = Color3.fromRGB(100, 80, 160)
+    DARK_ACCENT = Color3.fromRGB(100, 80, 160),
+    TAB_ACCENT = Color3.fromRGB(147, 112, 219)
 }
 
 -- Rainbow Color Function
@@ -25,7 +26,7 @@ end
 
 -- GUI Creation
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlyHackPremium"
+screenGui.Name = "Syfer-eng's Teloport Cheat"
 screenGui.Parent = game:GetService("CoreGui")
 screenGui.ResetOnSpawn = false
 
@@ -73,7 +74,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0.4, 0, 0.06, 0)
 title.Position = UDim2.new(0.3, 0, 0.02, 0)
 title.BackgroundTransparency = 1
-title.Text = "Premium Teleport Hub"
+title.Text = "Syfer-eng │ Teloport"
 title.TextColor3 = COLORS.TEXT
 title.TextSize = 24
 title.Font = Enum.Font.GothamBold
@@ -101,8 +102,8 @@ contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainWindow
 
 -- Button Enhancement Function
-local function enhanceButton(button)
-    button.BackgroundColor3 = COLORS.ACCENT
+local function enhanceButton(button, isTab)
+    button.BackgroundColor3 = isTab and COLORS.TAB_ACCENT or COLORS.ACCENT
     button.TextColor3 = COLORS.TEXT
     
     local textStroke = Instance.new("UIStroke")
@@ -126,7 +127,7 @@ local function enhanceButton(button)
     button.MouseLeave:Connect(function()
         tweenService:Create(highlight, TweenInfo.new(0.3), {
             Transparency = 0.5,
-            Color = COLORS.ACCENT
+            Color = isTab and COLORS.TAB_ACCENT or COLORS.ACCENT
         }):Play()
     end)
 end
@@ -135,13 +136,13 @@ end
 local tpTab = Instance.new("TextButton")
 tpTab.Size = UDim2.new(0.5, 0, 1, 0)
 tpTab.Position = UDim2.new(0, 0, 0, 0)
-tpTab.BackgroundColor3 = COLORS.ACCENT
+tpTab.BackgroundColor3 = COLORS.TAB_ACCENT
 tpTab.Text = "Teleport"
 tpTab.TextColor3 = COLORS.TEXT
 tpTab.TextSize = 18
 tpTab.Font = Enum.Font.GothamBold
 tpTab.Parent = tabContainer
-enhanceButton(tpTab)
+enhanceButton(tpTab, true)
 
 -- Create Unload Tab
 local unloadTab = Instance.new("TextButton")
@@ -153,7 +154,7 @@ unloadTab.TextColor3 = COLORS.TEXT
 unloadTab.TextSize = 18
 unloadTab.Font = Enum.Font.GothamBold
 unloadTab.Parent = tabContainer
-enhanceButton(unloadTab)
+enhanceButton(unloadTab, true)
 
 -- Create TP Content
 local tpContent = Instance.new("Frame")
@@ -171,7 +172,7 @@ playerList.BorderSizePixel = 0
 playerList.ScrollBarThickness = 6
 playerList.Parent = tpContent
 
--- Create Reload Button at Bottom
+-- Create Reload Button
 local reloadButton = Instance.new("TextButton")
 reloadButton.Size = UDim2.new(0.3, 0, 0.06, 0)
 reloadButton.Position = UDim2.new(0.35, 0, 0.92, 0)
@@ -181,7 +182,7 @@ reloadButton.TextColor3 = COLORS.TEXT
 reloadButton.TextSize = 16
 reloadButton.Font = Enum.Font.GothamBold
 reloadButton.Parent = tpContent
-enhanceButton(reloadButton)
+enhanceButton(reloadButton, false)
 
 -- Create Unload Content
 local unloadContent = Instance.new("Frame")
@@ -194,13 +195,13 @@ unloadContent.Parent = contentContainer
 local unloadButton = Instance.new("TextButton")
 unloadButton.Size = UDim2.new(0.3, 0, 0.1, 0)
 unloadButton.Position = UDim2.new(0.35, 0, 0.45, 0)
-unloadButton.BackgroundColor3 = COLORS.ACCENT
+unloadButton.BackgroundColor3 = COLORS.TAB_ACCENT
 unloadButton.Text = "Unload Menu"
 unloadButton.TextColor3 = COLORS.TEXT
 unloadButton.TextSize = 18
 unloadButton.Font = Enum.Font.GothamBold
 unloadButton.Parent = unloadContent
-enhanceButton(unloadButton)
+enhanceButton(unloadButton, true)
 
 -- Add Corner Radius to elements
 local function addCorners(button)
@@ -225,7 +226,7 @@ local function createPlayerButton(plr)
     button.TextSize = 16
     button.Font = Enum.Font.GothamSemibold
     button.Parent = playerList
-    enhanceButton(button)
+    enhanceButton(button, false)
     addCorners(button)
     
     button.MouseButton1Click:Connect(function()
@@ -387,7 +388,7 @@ tpTab.MouseButton1Click:Connect(function()
     tweenService:Create(unloadContent, TweenInfo.new(0.3), {Position = UDim2.new(1, 0, 0, 0)}):Play()
     tpContent.Visible = true
     unloadContent.Visible = false
-    tpTab.BackgroundColor3 = COLORS.ACCENT
+    tpTab.BackgroundColor3 = COLORS.TAB_ACCENT
     unloadTab.BackgroundColor3 = COLORS.DARK_ACCENT
 end)
 
@@ -397,7 +398,7 @@ unloadTab.MouseButton1Click:Connect(function()
     tpContent.Visible = false
     unloadContent.Visible = true
     tpTab.BackgroundColor3 = COLORS.DARK_ACCENT
-    unloadTab.BackgroundColor3 = COLORS.ACCENT
+    unloadTab.BackgroundColor3 = COLORS.TAB_ACCENT
 end)
 
 -- Reload Button Logic
