@@ -146,32 +146,52 @@ controlsText.TextWrapped = true
 controlsText.TextYAlignment = Enum.TextYAlignment.Top
 controlsText.Parent = controlsFrame
 
--- Flying Logic
+-- Enhanced Flying Logic
 local flying = false
 local bodyVelocity
+local gyro
+local MAX_SPEED = 100
+local ACCELERATION = 2
+local currentSpeed = 0
 
 local function startFlying()
     if not flying then
         flying = true
+        
+        -- Create BodyVelocity
         bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = player.Character.HumanoidRootPart
         
-        game:GetService("RunService").Heartbeat:Connect(function()
+        -- Create BodyGyro for stability
+        gyro = Instance.new("BodyGyro")
+        gyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        gyro.D = 50
+        gyro.P = 5000
+        gyro.Parent = player.Character.HumanoidRootPart
+        
+        -- Disable character animations
+        player.Character.Humanoid.PlatformStand = true
+        
+        runService.RenderStepped:Connect(function(delta)
             if flying then
+                -- Update gyro orientation
+                gyro.CFrame = workspace.CurrentCamera.CFrame
+                
+                -- Calculate movement direction
                 local moveDirection = Vector3.new(0, 0, 0)
                 if userInputService:IsKeyDown(Enum.KeyCode.W) then
-                    moveDirection = moveDirection + player.Character.HumanoidRootPart.CFrame.LookVector
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.A) then
-                    moveDirection = moveDirection - player.Character.HumanoidRootPart.CFrame.RightVector
+                    moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
                 end
                 if userInputService:IsKeyDown(Enum.KeyCode.S) then
-                    moveDirection = moveDirection - player.Character.HumanoidRootPart.CFrame.LookVector
+                    moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
                 end
                 if userInputService:IsKeyDown(Enum.KeyCode.D) then
-                    moveDirection = moveDirection + player.Character.HumanoidRootPart.CFrame.RightVector
+                    moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
                 end
                 if userInputService:IsKeyDown(Enum.KeyCode.Space) then
                     moveDirection = moveDirection + Vector3.new(0, 1, 0)
@@ -180,7 +200,16 @@ local function startFlying()
                     moveDirection = moveDirection - Vector3.new(0, 1, 0)
                 end
                 
-                bodyVelocity.Velocity = moveDirection * 50  -- Adjusted speed to 50
+                -- Normalize movement direction
+                if moveDirection.Magnitude > 0 then
+                    moveDirection = moveDirection.Unit
+                    currentSpeed = math.min(currentSpeed + ACCELERATION, MAX_SPEED)
+                else
+                    currentSpeed = math.max(currentSpeed - ACCELERATION * 2, 0)
+                end
+                
+                -- Apply velocity with smooth acceleration
+                bodyVelocity.Velocity = moveDirection * currentSpeed
             end
         end)
     end
@@ -189,27 +218,32 @@ end
 local function stopFlying()
     if flying then
         flying = false
+        currentSpeed = 0
+        
         if bodyVelocity then
             bodyVelocity:Destroy()
         end
+        if gyro then
+            gyro:Destroy()
+        end
+        
+        -- Re-enable character animations
+        player.Character.Humanoid.PlatformStand = false
     end
 end
 
--- Unload Script Logic (including stop fly)
+-- Unload Script Logic
 unloadButton.MouseButton1Click:Connect(function()
-    -- Stop flying if it's active
     if flying then
         stopFlying()
         flyButton.Text = "Start Fly"
     end
     
-    -- Reset WalkSpeed in case it was modified by the script
     local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
     if humanoid then
         humanoid.WalkSpeed = 16
     end
     
-    -- Destroy the GUI to unload the script
     screenGui:Destroy()
 end)
 
