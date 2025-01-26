@@ -1,225 +1,368 @@
-if game:GetService("CoreGui"):FindFirstChild("CoolUI") then
-    game:GetService("CoreGui"):FindFirstChild("CoolUI"):Destroy()
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local tweenService = game:GetService("TweenService")
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+-- GUI Creation
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FlyHackPremium"
+screenGui.Parent = game:GetService("CoreGui")
+screenGui.ResetOnSpawn = false
+
+-- Main Window
+local mainWindow = Instance.new("Frame")
+mainWindow.Size = UDim2.new(0, 800, 0, 500)
+mainWindow.Position = UDim2.new(0.5, -400, 0.5, -250)
+mainWindow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+mainWindow.BorderSizePixel = 0
+mainWindow.Active = true
+mainWindow.Draggable = true
+mainWindow.ClipsDescendants = true
+mainWindow.Parent = screenGui
+
+-- Add Shadow
+local shadow = Instance.new("ImageLabel")
+shadow.Size = UDim2.new(1.02, 0, 1.02, 0)
+shadow.Position = UDim2.new(-0.01, 0, -0.01, 0)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://297774371"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.7
+shadow.Parent = mainWindow
+
+-- Add Corner Radius to Main Window
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.Parent = mainWindow
+
+-- Add Gradient to Main Window
+local function addGradient(parent)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 240, 240))
+    })
+    gradient.Rotation = 45
+    gradient.Parent = parent
 end
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+addGradient(mainWindow)
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CoolUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Create Tab Container
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(1, 0, 0.1, 0)
+tabContainer.Position = UDim2.new(0, 0, 0, 0)
+tabContainer.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+tabContainer.BorderSizePixel = 0
+tabContainer.Parent = mainWindow
 
-if RunService:IsStudio() then
-    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-else
-    ScreenGui.Parent = game:GetService("CoreGui")
+-- Create Content Container
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, 0, 0.9, 0)
+contentContainer.Position = UDim2.new(0, 0, 0.1, 0)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainWindow
+
+-- Create TP Tab
+local tpTab = Instance.new("TextButton")
+tpTab.Size = UDim2.new(0.5, 0, 1, 0)
+tpTab.Position = UDim2.new(0, 0, 0, 0)
+tpTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+tpTab.Text = "TP"
+tpTab.TextSize = 18
+tpTab.Font = Enum.Font.GothamBold
+tpTab.Parent = tabContainer
+
+-- Create Unload Tab
+local unloadTab = Instance.new("TextButton")
+unloadTab.Size = UDim2.new(0.5, 0, 1, 0)
+unloadTab.Position = UDim2.new(0.5, 0, 0, 0)
+unloadTab.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+unloadTab.Text = "Unload"
+unloadTab.TextSize = 18
+unloadTab.Font = Enum.Font.GothamBold
+unloadTab.Parent = tabContainer
+
+-- Create TP Content
+local tpContent = Instance.new("Frame")
+tpContent.Size = UDim2.new(1, 0, 1, 0)
+tpContent.BackgroundTransparency = 1
+tpContent.Visible = true
+tpContent.Parent = contentContainer
+
+-- Create Player List
+local playerList = Instance.new("ScrollingFrame")
+playerList.Size = UDim2.new(0.9, 0, 0.8, 0)
+playerList.Position = UDim2.new(0.05, 0, 0.1, 0)
+playerList.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+playerList.BorderSizePixel = 0
+playerList.ScrollBarThickness = 6
+playerList.Parent = tpContent
+
+-- Create Reload Button
+local reloadButton = Instance.new("TextButton")
+reloadButton.Size = UDim2.new(0.2, 0, 0.06, 0)
+reloadButton.Position = UDim2.new(0.4, 0, 0.02, 0)
+reloadButton.BackgroundColor3 = Color3.fromRGB(70, 170, 255)
+reloadButton.Text = "Reload List"
+reloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+reloadButton.TextSize = 16
+reloadButton.Font = Enum.Font.GothamBold
+reloadButton.Parent = tpContent
+
+-- Add corner radius to reload button
+local reloadCorner = Instance.new("UICorner")
+reloadCorner.CornerRadius = UDim.new(0, 6)
+reloadCorner.Parent = reloadButton
+
+-- Add corner radius to player list
+local playerListCorner = Instance.new("UICorner")
+playerListCorner.CornerRadius = UDim.new(0, 8)
+playerListCorner.Parent = playerList
+
+-- Create Unload Content
+local unloadContent = Instance.new("Frame")
+unloadContent.Size = UDim2.new(1, 0, 1, 0)
+unloadContent.BackgroundTransparency = 1
+unloadContent.Visible = false
+unloadContent.Parent = contentContainer
+
+-- Create Unload Button
+local unloadButton = Instance.new("TextButton")
+unloadButton.Size = UDim2.new(0.3, 0, 0.1, 0)
+unloadButton.Position = UDim2.new(0.35, 0, 0.45, 0)
+unloadButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+unloadButton.Text = "Unload Menu"
+unloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+unloadButton.TextSize = 18
+unloadButton.Font = Enum.Font.GothamBold
+unloadButton.Parent = unloadContent
+
+-- Add Corner Radius to buttons
+local function addCorners(button)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = button
 end
 
-local blur = Instance.new("BlurEffect")
-blur.Size = 0
-pcall(function()
-    blur.Parent = game:GetService("Lighting")
-end)
+addCorners(unloadButton)
+addCorners(tpTab)
+addCorners(unloadTab)
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
-
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 60)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 35))
-})
-UIGradient.Rotation = 45
-UIGradient.Parent = MainFrame
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = MainFrame
-
-local Title = Instance.new("TextLabel")
-Title.Text = "♢ Syfer-eng │ TP Menu ♢"
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Position = UDim2.new(0, 0, 0, 10)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 24
-Title.Parent = MainFrame
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 255, 255)
-UIStroke.Thickness = 2
-UIStroke.Transparency = 0.5
-UIStroke.Parent = Title
-
-local PlayerList = Instance.new("ScrollingFrame")
-PlayerList.Size = UDim2.new(0.9, 0, 0.5, 0)
-PlayerList.Position = UDim2.new(0.05, 0, 0.2, 0)
-PlayerList.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-PlayerList.BorderSizePixel = 0
-PlayerList.ScrollBarThickness = 4
-PlayerList.ClipsDescendants = true
-PlayerList.Parent = MainFrame
-
-local ListCorner = UICorner:Clone()
-ListCorner.Parent = PlayerList
-
-local ButtonsContainer = Instance.new("Frame")
-ButtonsContainer.Size = UDim2.new(0.9, 0, 0.2, 0)
-ButtonsContainer.Position = UDim2.new(0.05, 0, 0.75, 0)
-ButtonsContainer.BackgroundTransparency = 1
-ButtonsContainer.Parent = MainFrame
-
-local function createMenuButton(name, position, color)
+-- Function to create player button
+local function createPlayerButton(plr)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.48, 0, 0, 35)
-    button.Position = position
-    button.BackgroundColor3 = color
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Text = name
+    button.Size = UDim2.new(0.95, 0, 0, 40)
+    button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    button.Text = plr.Name
+    button.TextSize = 16
     button.Font = Enum.Font.GothamSemibold
-    button.TextSize = 14
-    button.AutoButtonColor = false
-    button.Parent = ButtonsContainer
+    button.Parent = playerList
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.CornerRadius = UDim.new(0, 6)
     buttonCorner.Parent = button
     
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(
-                math.min(color.R * 255 + 20, 255),
-                math.min(color.G * 255 + 20, 255),
-                math.min(color.B * 255 + 20, 255)
-            )
-        }):Play()
-    end)
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(245, 245, 245))
+    })
+    buttonGradient.Parent = button
     
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundColor3 = color
-        }):Play()
+    button.MouseButton1Click:Connect(function()
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame
+        end
     end)
     
     return button
 end
 
+-- Function to update player list
 local function updatePlayerList()
-    for _, child in pairs(PlayerList:GetChildren()) do
+    for _, child in ipairs(playerList:GetChildren()) do
         if child:IsA("TextButton") then
             child:Destroy()
         end
     end
     
     local yOffset = 5
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer then
-            local button = Instance.new("TextButton")
-            button.Size = UDim2.new(0.95, 0, 0, 35)
+    for _, plr in ipairs(game.Players:GetPlayers()) do
+        if plr ~= player then
+            local button = createPlayerButton(plr)
             button.Position = UDim2.new(0.025, 0, 0, yOffset)
-            button.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-            button.TextColor3 = Color3.fromRGB(200, 200, 255)
-            button.Text = player.Name
-            button.Font = Enum.Font.GothamSemibold
-            button.TextSize = 16
-            button.AutoButtonColor = false
-            button.Parent = PlayerList
-            
-            local buttonCorner = UICorner:Clone()
-            buttonCorner.Parent = button
-            
-            button.MouseEnter:Connect(function()
-                TweenService:Create(button, TweenInfo.new(0.3), {
-                    BackgroundColor3 = Color3.fromRGB(60, 60, 90),
-                    TextColor3 = Color3.fromRGB(255, 255, 255)
-                }):Play()
-            end)
-            
-            button.MouseLeave:Connect(function()
-                TweenService:Create(button, TweenInfo.new(0.3), {
-                    BackgroundColor3 = Color3.fromRGB(40, 40, 60),
-                    TextColor3 = Color3.fromRGB(200, 200, 255)
-                }):Play()
-            end)
-            
-            button.MouseButton1Click:Connect(function()
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local localPlayer = Players.LocalPlayer
-                    if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        localPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
-                    end
-                end
-            end)
-            
-            yOffset = yOffset + 40
+            yOffset = yOffset + 45
         end
     end
     
-    PlayerList.CanvasSize = UDim2.new(0, 0, 0, yOffset + 5)
+    playerList.CanvasSize = UDim2.new(0, 0, 0, yOffset)
 end
 
-local refreshButton = createMenuButton("Refresh", UDim2.new(0, 0, 0, 0), Color3.fromRGB(45, 125, 70))
-refreshButton.MouseButton1Click:Connect(updatePlayerList)
+-- Flying Logic
+local flying = false
+local bodyVelocity
 
-local closeButton = createMenuButton("Close", UDim2.new(0.52, 0, 0, 0), Color3.fromRGB(180, 60, 60))
-closeButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-end)
+local function startFlying()
+    if not flying then
+        flying = true
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = player.Character.HumanoidRootPart
+        
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if flying then
+                local moveDirection = Vector3.new(0, 0, 0)
+                if userInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveDirection = moveDirection + player.Character.HumanoidRootPart.CFrame.LookVector
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - player.Character.HumanoidRootPart.CFrame.RightVector
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveDirection = moveDirection - player.Character.HumanoidRootPart.CFrame.LookVector
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveDirection = moveDirection + player.Character.HumanoidRootPart.CFrame.RightVector
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
+                end
+                if userInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    moveDirection = moveDirection - Vector3.new(0, 1, 0)
+                end
+                
+                bodyVelocity.Velocity = moveDirection * 50
+            end
+        end)
+    end
+end
 
+local function stopFlying()
+    if flying then
+        flying = false
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+        end
+    end
+end
 
+-- Comet Effect
+local function createComet()
+    local comet = Instance.new("Frame")
+    comet.Size = UDim2.new(0, 4, 0, 4)
+    comet.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    comet.BorderSizePixel = 0
+    comet.Parent = mainWindow
+    
+    for i = 1, 5 do
+        local trail = Instance.new("Frame")
+        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
+        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
+        trail.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        trail.BackgroundTransparency = 0.2 * i
+        trail.BorderSizePixel = 0
+        trail.Parent = comet
+        
+        local glow = Instance.new("ImageLabel")
+        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
+        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
+        glow.BackgroundTransparency = 1
+        glow.Image = "rbxassetid://7331079227"
+        glow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        glow.ImageTransparency = 0.5 + (0.1 * i)
+        glow.Parent = trail
+    end
+    
+    local startX = math.random(-50, 0)
+    local startY = math.random(0, mainWindow.AbsoluteSize.Y)
+    comet.Position = UDim2.new(0, startX, 0, startY)
+    
+    local endX = mainWindow.AbsoluteSize.X + 50
+    local endY = startY + math.random(100, 200)
+    
+    local tweenInfo = TweenInfo.new(
+        math.random(8, 12) / 10,
+        Enum.EasingStyle.Linear
+    )
+    
+    local tween = tweenService:Create(comet, tweenInfo, {
+        Position = UDim2.new(0, endX, 0, endY),
+        BackgroundTransparency = 1
+    })
+    
+    tween:Play()
+    tween.Completed:Connect(function()
+        comet:Destroy()
+    end)
+end
 
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
-updatePlayerList()
-
-local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
+-- Spawn Comets Continuously
+spawn(function()
+    while wait(0.2) do
+        if mainWindow.Visible then
+            createComet()
+        end
     end
 end)
 
-MainFrame.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+-- Tab Switching Logic
+tpTab.MouseButton1Click:Connect(function()
+    tpContent.Visible = true
+    unloadContent.Visible = false
+    tpTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    unloadTab.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+end)
+
+unloadTab.MouseButton1Click:Connect(function()
+    tpContent.Visible = false
+    unloadContent.Visible = true
+    tpTab.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    unloadTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+-- Reload Button Logic
+reloadButton.MouseButton1Click:Connect(function()
+    reloadButton.BackgroundColor3 = Color3.fromRGB(50, 150, 235)
+    updatePlayerList()
+    wait(0.1)
+    reloadButton.
+    reloadButton.BackgroundColor3 = Color3.fromRGB(70, 170, 255)
+end)
+
+-- Unload Button Logic
+unloadButton.MouseButton1Click:Connect(function()
+    if flying then
+        stopFlying()
+    end
+    screenGui:Destroy()
+end)
+
+-- Update player list every 1 second
+spawn(function()
+    while wait(1) do
+        if tpContent.Visible then
+            updatePlayerList()
+        end
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
+-- Update when players join or leave
+game.Players.PlayerAdded:Connect(updatePlayerList)
+game.Players.PlayerRemoving:Connect(updatePlayerList)
+
+-- Toggle Flying with Insert key
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        if flying then
+            stopFlying()
+        else
+            startFlying()
+        end
     end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        local delta = dragInput.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
-MainFrame.Visible = true
+-- Initialize GUI State
+mainWindow.Visible = true
