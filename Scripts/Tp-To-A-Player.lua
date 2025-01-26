@@ -4,6 +4,12 @@ local tweenService = game:GetService("TweenService")
 local userInputService = game:GetService("UserInputService")
 local runService = game:GetService("RunService")
 
+-- Rainbow Color Function
+local function getRainbowColor(offset)
+    local tick = tick() + (offset or 0)
+    return Color3.fromHSV(tick % 5 / 5, 1, 1)
+end
+
 -- GUI Creation
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FlyHackPremium"
@@ -30,7 +36,6 @@ shadow.Image = "rbxassetid://297774371"
 shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
 shadow.ImageTransparency = 0.7
 shadow.Parent = mainWindow
-
 -- Add Corner Radius to Main Window
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 10)
@@ -49,10 +54,31 @@ end
 
 addGradient(mainWindow)
 
+-- Add Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.4, 0, 0.06, 0)
+title.Position = UDim2.new(0.3, 0, 0.02, 0)
+title.BackgroundTransparency = 1
+title.Text = "Syfer-eng's Teleport Hub"
+title.TextColor3 = Color3.fromRGB(40, 40, 40)
+title.TextSize = 24
+title.Font = Enum.Font.GothamBold
+title.Parent = mainWindow
+
+-- Status Indicator
+local statusIndicator = Instance.new("Frame")
+statusIndicator.Size = UDim2.new(0.02, 0, 0.02, 0)
+statusIndicator.Position = UDim2.new(0.97, 0, 0.02, 0)
+statusIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+statusIndicator.Parent = mainWindow
+
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(1, 0)
+statusCorner.Parent = statusIndicator
 -- Create Tab Container
 local tabContainer = Instance.new("Frame")
 tabContainer.Size = UDim2.new(1, 0, 0.1, 0)
-tabContainer.Position = UDim2.new(0, 0, 0, 0)
+tabContainer.Position = UDim2.new(0, 0, 0.1, 0)
 tabContainer.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
 tabContainer.BorderSizePixel = 0
 tabContainer.Parent = mainWindow
@@ -64,17 +90,17 @@ contentContainer.Position = UDim2.new(0, 0, 0.1, 0)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainWindow
 
--- Create TP Tab
+-- Create TP Tab with Enhanced Style
 local tpTab = Instance.new("TextButton")
 tpTab.Size = UDim2.new(0.5, 0, 1, 0)
 tpTab.Position = UDim2.new(0, 0, 0, 0)
 tpTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-tpTab.Text = "TP"
+tpTab.Text = "Teleport"
 tpTab.TextSize = 18
 tpTab.Font = Enum.Font.GothamBold
 tpTab.Parent = tabContainer
 
--- Create Unload Tab
+-- Create Unload Tab with Enhanced Style
 local unloadTab = Instance.new("TextButton")
 unloadTab.Size = UDim2.new(0.5, 0, 1, 0)
 unloadTab.Position = UDim2.new(0.5, 0, 0, 0)
@@ -83,7 +109,6 @@ unloadTab.Text = "Unload"
 unloadTab.TextSize = 18
 unloadTab.Font = Enum.Font.GothamBold
 unloadTab.Parent = tabContainer
-
 -- Create TP Content
 local tpContent = Instance.new("Frame")
 tpContent.Size = UDim2.new(1, 0, 1, 0)
@@ -91,7 +116,7 @@ tpContent.BackgroundTransparency = 1
 tpContent.Visible = true
 tpContent.Parent = contentContainer
 
--- Create Player List
+-- Create Enhanced Player List
 local playerList = Instance.new("ScrollingFrame")
 playerList.Size = UDim2.new(0.9, 0, 0.8, 0)
 playerList.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -100,10 +125,10 @@ playerList.BorderSizePixel = 0
 playerList.ScrollBarThickness = 6
 playerList.Parent = tpContent
 
--- Create Reload Button
+-- Create Enhanced Reload Button
 local reloadButton = Instance.new("TextButton")
-reloadButton.Size = UDim2.new(0.2, 0, 0.06, 0)
-reloadButton.Position = UDim2.new(0.4, 0, 0.02, 0)
+reloadButton.Size = UDim2.new(0.3, 0, 0.06, 0)
+reloadButton.Position = UDim2.new(0.35, 0, 0.92, 0)
 reloadButton.BackgroundColor3 = Color3.fromRGB(70, 170, 255)
 reloadButton.Text = "Reload List"
 reloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -111,6 +136,20 @@ reloadButton.TextSize = 16
 reloadButton.Font = Enum.Font.GothamBold
 reloadButton.Parent = tpContent
 
+-- Add Button Effects Function
+local function addButtonEffects(button)
+    button.MouseEnter:Connect(function()
+        tweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+        }):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        tweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+    end)
+end
 -- Add corner radius to reload button
 local reloadCorner = Instance.new("UICorner")
 reloadCorner.CornerRadius = UDim.new(0, 6)
@@ -128,7 +167,7 @@ unloadContent.BackgroundTransparency = 1
 unloadContent.Visible = false
 unloadContent.Parent = contentContainer
 
--- Create Unload Button
+-- Create Enhanced Unload Button
 local unloadButton = Instance.new("TextButton")
 unloadButton.Size = UDim2.new(0.3, 0, 0.1, 0)
 unloadButton.Position = UDim2.new(0.35, 0, 0.45, 0)
@@ -145,12 +184,83 @@ local function addCorners(button)
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = button
 end
+-- Enhanced Comet Effect with Rainbow Colors
+local function createComet()
+    local comet = Instance.new("Frame")
+    comet.Size = UDim2.new(0, 4, 0, 4)
+    comet.BorderSizePixel = 0
+    comet.Parent = mainWindow
+    
+    local startColor = getRainbowColor()
+    comet.BackgroundColor3 = startColor
+    
+    for i = 1, 5 do
+        local trail = Instance.new("Frame")
+        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
+        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
+        trail.BackgroundColor3 = startColor
+        trail.BackgroundTransparency = 0.2 * i
+        trail.BorderSizePixel = 0
+        trail.Parent = comet
+        
+        local glow = Instance.new("ImageLabel")
+        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
+        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
+        glow.BackgroundTransparency = 1
+        glow.Image = "rbxassetid://7331079227"
+        glow.ImageColor3 = startColor
+        glow.ImageTransparency = 0.5 + (0.1 * i)
+        glow.Parent = trail
+        
+        -- Animate trail color
+        spawn(function()
+            while trail.Parent do
+                trail.BackgroundColor3 = getRainbowColor(i * 0.1)
+                glow.ImageColor3 = getRainbowColor(i * 0.1)
+                wait(0.1)
+            end
+        end)
+    end
+    local startX = math.random(-50, 0)
+    local startY = math.random(0, mainWindow.AbsoluteSize.Y)
+    comet.Position = UDim2.new(0, startX, 0, startY)
+    
+    local endX = mainWindow.AbsoluteSize.X + 50
+    local endY = startY + math.random(100, 200)
+    
+    local tweenInfo = TweenInfo.new(
+        math.random(8, 12) / 10,
+        Enum.EasingStyle.Linear
+    )
+    
+    -- Animate comet color
+    spawn(function()
+        while comet.Parent do
+            comet.BackgroundColor3 = getRainbowColor()
+            wait(0.1)
+        end
+    end)
+    
+    local tween = tweenService:Create(comet, tweenInfo, {
+        Position = UDim2.new(0, endX, 0, endY),
+        BackgroundTransparency = 1
+    })
+    
+    tween:Play()
+    tween.Completed:Connect(function()
+        comet:Destroy()
+    end)
+end
 
-addCorners(unloadButton)
-addCorners(tpTab)
-addCorners(unloadTab)
-
--- Function to create player button
+-- Spawn Rainbow Comets Continuously
+spawn(function()
+    while wait(0.2) do
+        if mainWindow.Visible then
+            createComet()
+        end
+    end
+end)
+-- Function to create enhanced player button
 local function createPlayerButton(plr)
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(0.95, 0, 0, 40)
@@ -171,6 +281,9 @@ local function createPlayerButton(plr)
     })
     buttonGradient.Parent = button
     
+    -- Add hover effect
+    addButtonEffects(button)
+    
     button.MouseButton1Click:Connect(function()
         if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             player.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame
@@ -179,8 +292,7 @@ local function createPlayerButton(plr)
     
     return button
 end
-
--- Function to update player list
+-- Enhanced player list update function
 local function updatePlayerList()
     for _, child in ipairs(playerList:GetChildren()) do
         if child:IsA("TextButton") then
@@ -211,7 +323,6 @@ local function startFlying()
         bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = player.Character.HumanoidRootPart
-        
         game:GetService("RunService").Heartbeat:Connect(function()
             if flying then
                 local moveDirection = Vector3.new(0, 0, 0)
@@ -248,68 +359,10 @@ local function stopFlying()
         end
     end
 end
-
--- Comet Effect
-local function createComet()
-    local comet = Instance.new("Frame")
-    comet.Size = UDim2.new(0, 4, 0, 4)
-    comet.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    comet.BorderSizePixel = 0
-    comet.Parent = mainWindow
-    
-    for i = 1, 5 do
-        local trail = Instance.new("Frame")
-        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
-        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
-        trail.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        trail.BackgroundTransparency = 0.2 * i
-        trail.BorderSizePixel = 0
-        trail.Parent = comet
-        
-        local glow = Instance.new("ImageLabel")
-        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
-        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://7331079227"
-        glow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-        glow.ImageTransparency = 0.5 + (0.1 * i)
-        glow.Parent = trail
-    end
-    
-    local startX = math.random(-50, 0)
-    local startY = math.random(0, mainWindow.AbsoluteSize.Y)
-    comet.Position = UDim2.new(0, startX, 0, startY)
-    
-    local endX = mainWindow.AbsoluteSize.X + 50
-    local endY = startY + math.random(100, 200)
-    
-    local tweenInfo = TweenInfo.new(
-        math.random(8, 12) / 10,
-        Enum.EasingStyle.Linear
-    )
-    
-    local tween = tweenService:Create(comet, tweenInfo, {
-        Position = UDim2.new(0, endX, 0, endY),
-        BackgroundTransparency = 1
-    })
-    
-    tween:Play()
-    tween.Completed:Connect(function()
-        comet:Destroy()
-    end)
-end
-
--- Spawn Comets Continuously
-spawn(function()
-    while wait(0.2) do
-        if mainWindow.Visible then
-            createComet()
-        end
-    end
-end)
-
--- Tab Switching Logic
+-- Enhanced Tab Switching Logic with Smooth Transitions
 tpTab.MouseButton1Click:Connect(function()
+    tweenService:Create(tpContent, TweenInfo.new(0.3), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+    tweenService:Create(unloadContent, TweenInfo.new(0.3), {Position = UDim2.new(1, 0, 0, 0)}):Play()
     tpContent.Visible = true
     unloadContent.Visible = false
     tpTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -317,18 +370,19 @@ tpTab.MouseButton1Click:Connect(function()
 end)
 
 unloadTab.MouseButton1Click:Connect(function()
+    tweenService:Create(tpContent, TweenInfo.new(0.3), {Position = UDim2.new(-1, 0, 0, 0)}):Play()
+    tweenService:Create(unloadContent, TweenInfo.new(0.3), {Position = UDim2.new(0, 0, 0, 0)}):Play()
     tpContent.Visible = false
     unloadContent.Visible = true
     tpTab.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
     unloadTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
--- Reload Button Logic
+-- Enhanced Reload Button Logic
 reloadButton.MouseButton1Click:Connect(function()
     reloadButton.BackgroundColor3 = Color3.fromRGB(50, 150, 235)
     updatePlayerList()
     wait(0.1)
-    reloadButton.
     reloadButton.BackgroundColor3 = Color3.fromRGB(70, 170, 255)
 end)
 
@@ -340,7 +394,7 @@ unloadButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- Update player list every 1 second
+-- Auto Update Player List
 spawn(function()
     while wait(1) do
         if tpContent.Visible then
@@ -349,11 +403,11 @@ spawn(function()
     end
 end)
 
--- Update when players join or leave
+-- Player Join/Leave Updates
 game.Players.PlayerAdded:Connect(updatePlayerList)
 game.Players.PlayerRemoving:Connect(updatePlayerList)
 
--- Toggle Flying with Insert key
+-- Flying Toggle
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
         if flying then
@@ -364,5 +418,11 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Initialize GUI State
+-- Initialize GUI
+addCorners(unloadButton)
+addCorners(tpTab)
+addCorners(unloadTab)
+addButtonEffects(tpTab)
+addButtonEffects(unloadTab)
 mainWindow.Visible = true
+updatePlayerList()
