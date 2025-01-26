@@ -6,7 +6,7 @@ local runService = game:GetService("RunService")
 
 -- GUI Creation
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlyHackPremium"
+screenGui.Name = "Syfer-eng Menu Templet"
 screenGui.Parent = game:GetService("CoreGui")
 screenGui.ResetOnSpawn = false
 
