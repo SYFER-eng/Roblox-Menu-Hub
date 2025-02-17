@@ -9,7 +9,6 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- FOV Circle
-local FOVShape = "Circle"
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = true
 FOVCircle.Thickness = 2
@@ -19,48 +18,25 @@ FOVCircle.Transparency = 1
 FOVCircle.NumSides = 100
 FOVCircle.Radius = 100
 
--- FOV Rectangle
-local FOVRectangle = Drawing.new("Square")
-FOVRectangle.Visible = false
-FOVRectangle.Thickness = 2
-FOVRectangle.Color = Color3.fromRGB(255, 255, 255)
-FOVRectangle.Filled = false
-FOVRectangle.Transparency = 1
-
--- Menu Popup
-local MenuPopup = Drawing.new("Text")
-MenuPopup.Text = "Syfer-eng Menu v1.0"
-MenuPopup.Size = 18
-MenuPopup.Color = Color3.fromRGB(255, 255, 255)
-MenuPopup.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X - 180, workspace.CurrentCamera.ViewportSize.Y - 50)
-MenuPopup.Visible = false
-MenuPopup.Outline = true
-MenuPopup.OutlineColor = Color3.fromRGB(0, 0, 0)
-
--- Device Type Function
-local function GetDeviceType()
-    if UserInputService.TouchEnabled then return "Mobile"
-    elseif UserInputService.GamepadEnabled then return "Console"
-    else return "PC" end
-end
-
 -- Settings
 local Settings = {
     AimbotEnabled = false,
-    SoftAimEnabled = false,
     TeamCheck = true,
     AimPart = "Head",
-    FOVType = "Default",
     ESPEnabled = false,
-    BoneESP = false,
     BoxESP = false,
+    NameESP = false,
+    HealthESP = false,
+    BoneESP = false,
     ShowFOV = true,
     RainbowESP = false,
-    ESPColor = Color3.fromRGB(255, 255, 255),
-    CheatESPEnabled = false
+    ESPColor = Color3.fromRGB(255, 255, 255)
 }
 
--- Bone Connections
+-- ESP Objects Cache
+local ESPObjects = {}
+
+-- Bone Connections for R15
 local BoneConnections = {
     {"Head", "UpperTorso"},
     {"UpperTorso", "LowerTorso"},
@@ -78,125 +54,75 @@ local BoneConnections = {
     {"RightLowerLeg", "RightFoot"}
 }
 
--- ESP Objects Cache
-local ESPObjects = {}
-
--- Create Tabs
-local CombatTab = Window:NewTab("💥 Combat")
-local VisualTab = Window:NewTab("👁️ Visuals")
-local FOVTab = Window:NewTab("🔍 FOV")
-
--- Combat Section
-local AimbotSection = CombatTab:NewSection("Universal Aimbot")
-
--- Cheat Detection Function
-local function IsPlayerCheating(player)
-    local character = player.Character
-    if not character then return false end
-
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then return false end
-
-    return humanoid.WalkSpeed > 20 or humanoid.JumpPower > 55 or (character.HumanoidRootPart and character.HumanoidRootPart.Position.Y > 500)
+-- Create ESP Object Function
+local function CreateESPObject()
+    return {
+        Box = Drawing.new("Square"),
+        Name = Drawing.new("Text"),
+        Distance = Drawing.new("Text"),
+        HealthBar = Drawing.new("Square"),
+        HealthBarOutline = Drawing.new("Square"),
+        Bones = {},
+        Tracer = Drawing.new("Line")
+    }
 end
 
--- Initialize Sections
-local function InitializeAimbotSection()
-    AimbotSection:NewToggle("Enable Aimbot", "Universal targeting system", function(state)
-        Settings.AimbotEnabled = state
-    end)
+-- Initialize ESP Object
+local function InitializeESPObject(espObject)
+    espObject.Box.Thickness = 1
+    espObject.Box.Filled = false
+    espObject.Box.Visible = false
 
-    AimbotSection:NewToggle("Team Check", "Universal team detection", function(state)
-        Settings.TeamCheck = state
-    end)
+    espObject.Name.Size = 13
+    espObject.Name.Center = true
+    espObject.Name.Outline = true
+    espObject.Name.Visible = false
 
-    AimbotSection:NewDropdown("Aim Part", "Universal part targeting", 
-        {"Head", "Torso", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, 
-        function(part)
-            Settings.AimPart = part
-        end)
-end
+    espObject.Distance.Size = 12
+    espObject.Distance.Center = true
+    espObject.Distance.Outline = true
+    espObject.Distance.Visible = false
 
--- Initialize Aimbot Section
-InitializeAimbotSection()
+    espObject.HealthBar.Thickness = 1
+    espObject.HealthBar.Filled = true
+    espObject.HealthBar.Visible = false
 
--- Visual Section
-local ESPSection = VisualTab:NewSection("Universal ESP")
-local function InitializeESPSection()
-    ESPSection:NewToggle("Enable ESP", "Universal player ESP", function(state)
-        Settings.ESPEnabled = state
-    end)
+    espObject.HealthBarOutline.Thickness = 2
+    espObject.HealthBarOutline.Filled = false
+    espObject.HealthBarOutline.Visible = false
 
-    ESPSection:NewToggle("Bone ESP", "Universal skeleton system", function(state)
-        Settings.BoneESP = state
-    end)
+    espObject.Tracer.Thickness = 1
+    espObject.Tracer.Visible = false
 
-    ESPSection:NewToggle("Box ESP", "Universal box system", function(state)
-        Settings.BoxESP = state
-    end)
-
-    ESPSection:NewToggle("Rainbow ESP", "Dynamic color system", function(state)
-        Settings.RainbowESP = state
-    end)
-end
-
-InitializeESPSection()
-
--- FOV Section
-local FOVSection = FOVTab:NewSection("FOV Settings")
-local function InitializeFOVSection()
-    FOVSection:NewToggle("Show FOV Circle", "Toggle FOV circle visibility", function(state)
-        Settings.ShowFOV = state
-        FOVCircle.Visible = state
-        FOVRectangle.Visible = false
-    end)
-
-    FOVSection:NewDropdown("FOV Type", "Select FOV type", 
-        {"Default", "Wide", "Narrow"}, 
-        function(selected)
-            Settings.FOVType = selected
-            FOVCircle.Radius = selected == "Wide" and 150 or selected == "Narrow" and 50 or 100
-        end)
-end
-
-InitializeFOVSection()
-
--- Utility Functions
-local function FindFirstAvailablePart(character, partNames)
-    for _, name in ipairs(partNames) do
-        local part = character:FindFirstChild(name)
-        if part then return part end
+    for _ = 1, #BoneConnections do
+        local bone = Drawing.new("Line")
+        bone.Thickness = 1
+        bone.Visible = false
+        table.insert(espObject.Bones, bone)
     end
-    return nil
 end
 
+-- Get Closest Player Function
 local function GetClosestPlayer()
     local closest = nil
     local shortestDistance = math.huge
     local mousePos = UserInputService:GetMouseLocation()
 
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                if Settings.TeamCheck and player.Team == LocalPlayer.Team then continue end
-                
-                local targetPart = FindFirstAvailablePart(character, {
-                    Settings.AimPart,
-                    "Head",
-                    "HumanoidRootPart",
-                    "Torso",
-                    "UpperTorso"
-                })
+        if player ~= LocalPlayer and player.Character then
+            if Settings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+            
+            local targetPart = player.Character:FindFirstChild(Settings.AimPart) or 
+                             player.Character:FindFirstChild("Head") or 
+                             player.Character:FindFirstChild("HumanoidRootPart")
 
-                if targetPart then
-                    local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-                    if onScreen then
-                        local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                        if distance < shortestDistance then
-                            closest = player
-                            shortestDistance = distance
-                        end
+            if targetPart then
+                local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                if onScreen then
+                    local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    if distance < FOVCircle.Radius and distance < shortestDistance then
+                        closest = player
+                        shortestDistance = distance
                     end
                 end
             end
@@ -205,183 +131,188 @@ local function GetClosestPlayer()
     return closest
 end
 
-local function CreateBoneDrawing()
-    local drawing = Drawing.new("Line")
-    drawing.Thickness = 2
-    drawing.Color = Color3.new(1, 0, 0)
-    return drawing
-end
-
-local function GetRainbowColor()
-    return Color3.fromHSV(tick() % 5 / 5, 1, 1)
-end
-
+-- Update ESP Function
 local function UpdateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
+            if not ESPObjects[player] then
+                ESPObjects[player] = CreateESPObject()
+                InitializeESPObject(ESPObjects[player])
+            end
+
+            local esp = ESPObjects[player]
             local character = player.Character
-            if character then
-                if Settings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+            local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character and character:FindFirstChild("Humanoid")
 
-                if not ESPObjects[player] then
-                    ESPObjects[player] = {
-                        Box = Drawing.new("Square"),
-                        CheaterLabel = Drawing.new("Text"),
-                        Bones = {}
-                    }
+            if character and humanoidRootPart and humanoid and Settings.ESPEnabled then
+                local vector, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+                local distance = (Camera.CFrame.Position - humanoidRootPart.Position).Magnitude
+                local espColor = Settings.RainbowESP and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESPColor
 
-                    local esp = ESPObjects[player]
-                    esp.Box.Thickness = 2
-                    esp.Box.Filled = false
-                    esp.Box.Color = Color3.new(1, 0, 0)
-
-                    esp.CheaterLabel.Size = 24
-                    esp.CheaterLabel.Center = true
-                    esp.CheaterLabel.Outline = true
-                    esp.CheaterLabel.OutlineColor = Color3.fromRGB(0, 0, 0)
-                    esp.CheaterLabel.Color = Color3.fromRGB(0, 255, 0)
-
-                    for _ = 1, #BoneConnections do
-                        table.insert(esp.Bones, CreateBoneDrawing())
-                    end
-                end
-
-                if Settings.ESPEnabled then
-                    local espColor = Settings.RainbowESP and GetRainbowColor() or Settings.ESPColor
-                    local esp = ESPObjects[player]
-
+                if onScreen then
                     if Settings.BoxESP then
-                        local rootPart = FindFirstAvailablePart(character, {"HumanoidRootPart"})
-                        if rootPart then
-                            local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-                            if onScreen then
-                                local size = Vector2.new(2000 / vector.Z, 3000 / vector.Z)
-                                esp.Box.Size = size
-                                esp.Box.Position = Vector2.new(vector.X - size.X / 2, vector.Y - size.Y / 2)
-                                esp.Box.Color = espColor
-                                esp.Box.Visible = true
+                        local size = Vector2.new(2000 / vector.Z, 3000 / vector.Z)
+                        esp.Box.Size = size
+                        esp.Box.Position = Vector2.new(vector.X - size.X / 2, vector.Y - size.Y / 2)
+                        esp.Box.Color = espColor
+                        esp.Box.Visible = true
 
-                                if Settings.CheatESPEnabled then
-                                    local isCheating = IsPlayerCheating(player)
-                                    esp.CheaterLabel.Text = isCheating and "CHEATING" or "NOT CHEATING"
-                                    esp.CheaterLabel.Color = isCheating and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                                    esp.CheaterLabel.Position = Vector2.new(vector.X, vector.Y)
-                                    esp.CheaterLabel.Visible = true
-                                else
-                                    esp.CheaterLabel.Visible = false
-                                end
-                            else
-                                esp.Box.Visible = false
-                                esp.CheaterLabel.Visible = false
-                            end
+                        if Settings.NameESP then
+                            esp.Name.Text = string.format("%s\n[%d studs]", player.Name, math.floor(distance))
+                            esp.Name.Position = Vector2.new(vector.X, vector.Y - size.Y / 2 - 15)
+                            esp.Name.Color = espColor
+                            esp.Name.Visible = true
                         end
-                    else
-                        esp.Box.Visible = false
-                        esp.CheaterLabel.Visible = false
+
+                        if Settings.HealthESP then
+                            local healthBarSize = Vector2.new(3, size.Y)
+                            local healthBarPos = Vector2.new(vector.X - size.X / 2 - 5, vector.Y - size.Y / 2)
+                            
+                            esp.HealthBarOutline.Size = Vector2.new(5, size.Y + 2)
+                            esp.HealthBarOutline.Position = Vector2.new(healthBarPos.X - 1, healthBarPos.Y - 1)
+                            esp.HealthBarOutline.Color = Color3.new(0, 0, 0)
+                            esp.HealthBarOutline.Visible = true
+
+                            esp.HealthBar.Size = Vector2.new(3, size.Y * (humanoid.Health / humanoid.MaxHealth))
+                            esp.HealthBar.Position = healthBarPos
+                            esp.HealthBar.Color = Color3.fromRGB(255 * (1 - humanoid.Health / humanoid.MaxHealth), 255 * (humanoid.Health / humanoid.MaxHealth), 0)
+                            esp.HealthBar.Visible = true
+                        end
                     end
 
                     if Settings.BoneESP then
                         for i, connection in ipairs(BoneConnections) do
-                            local part1 = FindFirstAvailablePart(character, {connection[1]})
-                            local part2 = FindFirstAvailablePart(character, {connection[2]})
+                            local part1 = character:FindFirstChild(connection[1])
+                            local part2 = character:FindFirstChild(connection[2])
 
                             if part1 and part2 then
                                 local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
                                 local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
 
                                 if vis1 and vis2 then
-                                    local bone = esp.Bones[i]
-                                    bone.From = Vector2.new(pos1.X, pos1.Y)
-                                    bone.To = Vector2.new(pos2.X, pos2.Y)
-                                    bone.Color = espColor
-                                    bone.Visible = true
+                                    esp.Bones[i].From = Vector2.new(pos1.X, pos1.Y)
+                                    esp.Bones[i].To = Vector2.new(pos2.X, pos2.Y)
+                                    esp.Bones[i].Color = espColor
+                                    esp.Bones[i].Visible = true
                                 else
                                     esp.Bones[i].Visible = false
                                 end
-                            else
-                                esp.Bones[i].Visible = false
                             end
-                        end
-                    else
-                        for _, bone in pairs(esp.Bones) do
-                            bone.Visible = false
                         end
                     end
                 else
-                    local esp = ESPObjects[player]
                     esp.Box.Visible = false
-                    esp.CheaterLabel.Visible = false
+                    esp.Name.Visible = false
+                    esp.HealthBar.Visible = false
+                    esp.HealthBarOutline.Visible = false
                     for _, bone in pairs(esp.Bones) do
                         bone.Visible = false
                     end
+                end
+            else
+                esp.Box.Visible = false
+                esp.Name.Visible = false
+                esp.HealthBar.Visible = false
+                esp.HealthBarOutline.Visible = false
+                for _, bone in pairs(esp.Bones) do
+                    bone.Visible = false
                 end
             end
         end
     end
 end
 
--- Main Loop
-RunService.RenderStepped:Connect(function()
-    local mousePos = UserInputService:GetMouseLocation()
-    
-    if FOVShape == "Circle" then
-        FOVCircle.Position = mousePos
-        FOVCircle.Visible = Settings.ShowFOV
-    elseif FOVShape == "Square" then
-        FOVRectangle.Position = Vector2.new(mousePos.X - 50, mousePos.Y - 50)
-        FOVRectangle.Size = Vector2.new(100, 100)
-        FOVRectangle.Visible = Settings.ShowFOV
-    end
-
-    if Settings.AimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+-- Aimbot Function
+local function UpdateAimbot()
+    if Settings.AimbotEnabled and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
         local target = GetClosestPlayer()
         if target and target.Character then
-            local targetPart = FindFirstAvailablePart(target.Character, {
-                Settings.AimPart,
-                "Head",
-                "HumanoidRootPart",
-                "Torso",
-                "UpperTorso"
-            })
+            local targetPart = target.Character:FindFirstChild(Settings.AimPart) or 
+                             target.Character:FindFirstChild("Head") or 
+                             target.Character:FindFirstChild("HumanoidRootPart")
 
             if targetPart then
                 local targetPos = targetPart.Position
+                local mousePos = UserInputService:GetMouseLocation()
+                local targetScreen = Camera:WorldToViewportPoint(targetPos)
+
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+                mousemoverel(
+                    (targetScreen.X - mousePos.X),
+                    (targetScreen.Y - mousePos.Y)
+                )
             end
         end
     end
+end
 
-    UpdateESP()
+-- Create UI Sections
+local CombatTab = Window:NewTab("Combat")
+local VisualsTab = Window:NewTab("Visuals")
+local SettingsTab = Window:NewTab("Settings")
 
-    if MenuPopup.Visible then
-        MenuPopup.Color = GetRainbowColor()
-        MenuPopup.OutlineColor = Color3.new(0, 0, 0)
-    end
+-- Combat Section
+local CombatSection = CombatTab:NewSection("Aimbot")
+CombatSection:NewToggle("Enable Aimbot", "Toggles aimbot functionality", function(state)
+    Settings.AimbotEnabled = state
 end)
 
--- Show Menu Popup on startup
-MenuPopup.Visible = true
-wait(3)
-MenuPopup.Visible = false
+CombatSection:NewToggle("Team Check", "Checks if player is on your team", function(state)
+    Settings.TeamCheck = state
+end)
 
--- Menu Toggle
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        local combatSuite = game:GetService("CoreGui"):FindFirstChild("CombatSuite")
-        if combatSuite then
-            combatSuite.Enabled = not combatSuite.Enabled
-        end
-    end
+CombatSection:NewDropdown("Aim Part", "Select part to aim at", {"Head", "Torso", "HumanoidRootPart"}, function(part)
+    Settings.AimPart = part
+end)
+
+-- Visuals Section
+local VisualsSection = VisualsTab:NewSection("ESP")
+VisualsSection:NewToggle("Enable ESP", "Toggles ESP features", function(state)
+    Settings.ESPEnabled = state
+end)
+
+VisualsSection:NewToggle("Box ESP", "Shows boxes around players", function(state)
+    Settings.BoxESP = state
+end)
+
+VisualsSection:NewToggle("Name ESP", "Shows player names", function(state)
+    Settings.NameESP = state
+end)
+
+VisualsSection:NewToggle("Health ESP", "Shows player health", function(state)
+    Settings.HealthESP = state
+end)
+
+VisualsSection:NewToggle("Bone ESP", "Shows player skeleton", function(state)
+    Settings.BoneESP = state
+end)
+
+VisualsSection:NewToggle("Rainbow ESP", "Makes ESP rainbow colored", function(state)
+    Settings.RainbowESP = state
+end)
+
+-- Main Loop
+RunService.RenderStepped:Connect(function()
+    local mousePos = UserInputService:GetMouseLocation()
+    FOVCircle.Position = mousePos
+    
+    UpdateAimbot()
+    UpdateESP()
 end)
 
 -- Cleanup
 Players.PlayerRemoving:Connect(function(player)
     if ESPObjects[player] then
-        for _, bone in pairs(ESPObjects[player].Bones) do
-            bone:Remove()
+        for _, drawing in pairs(ESPObjects[player]) do
+            if typeof(drawing) == "table" then
+                for _, bone in pairs(drawing) do
+                    bone:Remove()
+                end
+            else
+                drawing:Remove()
+            end
         end
-        ESPObjects[player].Box:Remove()
-        ESPObjects[player].CheaterLabel:Remove()
         ESPObjects[player] = nil
     end
 end)
