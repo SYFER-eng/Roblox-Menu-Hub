@@ -74,19 +74,19 @@ flyFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
 flyFrame.Visible = true
 flyFrame.Parent = mainWindow
 
-local unloadFrame = Instance.new("Frame")
-unloadFrame.Size = UDim2.new(0, 600, 1, 0)
-unloadFrame.Position = UDim2.new(0, 200, 0, 0)
-unloadFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-unloadFrame.Visible = false
-unloadFrame.Parent = mainWindow
-
 local controlsFrame = Instance.new("Frame")
 controlsFrame.Size = UDim2.new(0, 600, 1, 0)
 controlsFrame.Position = UDim2.new(0, 200, 0, 0)
 controlsFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
 controlsFrame.Visible = false
 controlsFrame.Parent = mainWindow
+
+local unloadFrame = Instance.new("Frame")
+unloadFrame.Size = UDim2.new(0, 600, 1, 0)
+unloadFrame.Position = UDim2.new(0, 200, 0, 0)
+unloadFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+unloadFrame.Visible = false
+unloadFrame.Parent = mainWindow
 
 -- Add Gradient to Frames
 local function addGradient(parent)
@@ -100,13 +100,13 @@ local function addGradient(parent)
 end
 
 addGradient(flyFrame)
-addGradient(unloadFrame)
 addGradient(controlsFrame)
+addGradient(unloadFrame)
 
 -- Fly Control Button
 local flyButton = Instance.new("TextButton")
 flyButton.Size = UDim2.new(0, 200, 0, 50)
-flyButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+flyButton.Position = UDim2.new(0.5, -100, 0.3, -25)
 flyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
 flyButton.Text = "Start Fly"
 flyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -117,6 +117,69 @@ flyButton.Parent = flyFrame
 local flyCorner = Instance.new("UICorner")
 flyCorner.CornerRadius = UDim.new(0, 8)
 flyCorner.Parent = flyButton
+
+-- Speed Slider Container
+local sliderContainer = Instance.new("Frame")
+sliderContainer.Size = UDim2.new(0, 400, 0, 60)
+sliderContainer.Position = UDim2.new(0.5, -200, 0.7, -30)
+sliderContainer.BackgroundTransparency = 1
+sliderContainer.Parent = flyFrame
+
+-- Speed Label
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, 0, 0, 20)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Flying Speed: 100"
+speedLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.TextSize = 14
+speedLabel.Parent = sliderContainer
+
+-- Slider Background
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(1, 0, 0, 10)
+sliderBg.Position = UDim2.new(0, 0, 0, 30)
+sliderBg.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+sliderBg.Parent = sliderContainer
+
+local sliderBgCorner = Instance.new("UICorner")
+sliderBgCorner.CornerRadius = UDim.new(0, 5)
+sliderBgCorner.Parent = sliderBg
+
+-- Slider Fill
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+sliderFill.Parent = sliderBg
+
+local sliderFillCorner = Instance.new("UICorner")
+sliderFillCorner.CornerRadius = UDim.new(0, 5)
+sliderFillCorner.Parent = sliderFill
+
+-- Slider Knob
+local sliderKnob = Instance.new("TextButton")
+sliderKnob.Size = UDim2.new(0, 20, 0, 20)
+sliderKnob.Position = UDim2.new(0.5, -10, 0, -5)
+sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+sliderKnob.Text = ""
+sliderKnob.Parent = sliderBg
+
+local sliderKnobCorner = Instance.new("UICorner")
+sliderKnobCorner.CornerRadius = UDim.new(1, 0)
+sliderKnobCorner.Parent = sliderKnob
+
+-- Controls Text
+local controlsText = Instance.new("TextLabel")
+controlsText.Size = UDim2.new(1, 0, 1, 0)
+controlsText.Position = UDim2.new(0, 0, 0, 0)
+controlsText.BackgroundTransparency = 1
+controlsText.Text = "Controls:\n\nW - Move Forward\nA - Move Left\nS - Move Backward\nD - Move Right\nSpace - Move Up\nLeftCtrl - Move Down\nInsert - Toggle GUI"
+controlsText.TextColor3 = Color3.fromRGB(0, 0, 0)
+controlsText.Font = Enum.Font.Gotham
+controlsText.TextSize = 20
+controlsText.TextWrapped = true
+controlsText.TextYAlignment = Enum.TextYAlignment.Top
+controlsText.Parent = controlsFrame
 
 -- Unload Button
 local unloadButton = Instance.new("TextButton")
@@ -133,153 +196,20 @@ local unloadCorner = Instance.new("UICorner")
 unloadCorner.CornerRadius = UDim.new(0, 8)
 unloadCorner.Parent = unloadButton
 
--- Controls Text
-local controlsText = Instance.new("TextLabel")
-controlsText.Size = UDim2.new(1, 0, 1, 0)
-controlsText.Position = UDim2.new(0, 0, 0, 0)
-controlsText.BackgroundTransparency = 1
-controlsText.Text = "Controls:\n\nW - Move Forward\nA - Move Left\nS - Move Backward\nD - Move Right\nSpace - Move Up\nLeftCtrl - Move Down"
-controlsText.TextColor3 = Color3.fromRGB(0, 0, 0)
-controlsText.Font = Enum.Font.Gotham
-controlsText.TextSize = 20
-controlsText.TextWrapped = true
-controlsText.TextYAlignment = Enum.TextYAlignment.Top
-controlsText.Parent = controlsFrame
-
--- Enhanced Flying Logic
-local flying = false
-local bodyVelocity
-local gyro
-local MAX_SPEED = 100
-local ACCELERATION = 2
-local currentSpeed = 0
-
-local function startFlying()
-    if not flying then
-        flying = true
-        
-        -- Create BodyVelocity
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = player.Character.HumanoidRootPart
-        
-        -- Create BodyGyro for stability
-        gyro = Instance.new("BodyGyro")
-        gyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        gyro.D = 50
-        gyro.P = 5000
-        gyro.Parent = player.Character.HumanoidRootPart
-        
-        -- Disable character animations
-        player.Character.Humanoid.PlatformStand = true
-        
-        runService.RenderStepped:Connect(function(delta)
-            if flying then
-                -- Update gyro orientation
-                gyro.CFrame = workspace.CurrentCamera.CFrame
-                
-                -- Calculate movement direction
-                local moveDirection = Vector3.new(0, 0, 0)
-                if userInputService:IsKeyDown(Enum.KeyCode.W) then
-                    moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.S) then
-                    moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.A) then
-                    moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.D) then
-                    moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
-                end
-                if userInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                    moveDirection = moveDirection - Vector3.new(0, 1, 0)
-                end
-                
-                -- Normalize movement direction
-                if moveDirection.Magnitude > 0 then
-                    moveDirection = moveDirection.Unit
-                    currentSpeed = math.min(currentSpeed + ACCELERATION, MAX_SPEED)
-                else
-                    currentSpeed = math.max(currentSpeed - ACCELERATION * 2, 0)
-                end
-                
-                -- Apply velocity with smooth acceleration
-                bodyVelocity.Velocity = moveDirection * currentSpeed
-            end
-        end)
-    end
-end
-
-local function stopFlying()
-    if flying then
-        flying = false
-        currentSpeed = 0
-        
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-        end
-        if gyro then
-            gyro:Destroy()
-        end
-        
-        -- Re-enable character animations
-        player.Character.Humanoid.PlatformStand = false
-    end
-end
-
--- Unload Script Logic
-unloadButton.MouseButton1Click:Connect(function()
-    if flying then
-        stopFlying()
-        flyButton.Text = "Start Fly"
-    end
-    
-    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = 16
-    end
-    
-    screenGui:Destroy()
-end)
-
 -- Comet Effect
 local function createComet()
     local comet = Instance.new("Frame")
     comet.Size = UDim2.new(0, 4, 0, 4)
-    comet.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    comet.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     comet.BorderSizePixel = 0
     comet.Parent = mainWindow
-    
-    for i = 1, 5 do
-        local trail = Instance.new("Frame")
-        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
-        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
-        trail.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        trail.BackgroundTransparency = 0.2 * i
-        trail.BorderSizePixel = 0
-        trail.Parent = comet
-        
-        local glow = Instance.new("ImageLabel")
-        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
-        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://7331079227"
-        glow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-        glow.ImageTransparency = 0.5 + (0.1 * i)
-        glow.Parent = trail
-    end
     
     local startX = math.random(-50, 0)
     local startY = math.random(0, mainWindow.AbsoluteSize.Y)
     comet.Position = UDim2.new(0, startX, 0, startY)
     
     local endX = mainWindow.AbsoluteSize.X + 50
-    local endY = startY + math.random(100, 200)
+    local endY = startY + math.random(-200, 200)
     
     local tweenInfo = TweenInfo.new(
         math.random(8, 12) / 10,
@@ -297,7 +227,7 @@ local function createComet()
     end)
 end
 
--- Spawn Comets Continuously
+-- Spawn Comets
 spawn(function()
     while wait(0.2) do
         if mainWindow.Visible then
@@ -306,34 +236,173 @@ spawn(function()
     end
 end)
 
+-- Slider Logic
+local isDragging = false
+local MAX_SPEED = 100
+local minSpeed = 20
+
+sliderKnob.MouseButton1Down:Connect(function()
+    isDragging = true
+end)
+
+userInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+userInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and isDragging then
+        local mousePos = userInputService:GetMouseLocation()
+        local sliderPos = sliderBg.AbsolutePosition
+        local sliderSize = sliderBg.AbsoluteSize
+        
+        local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
+        sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+        sliderKnob.Position = UDim2.new(relativeX, -10, 0, -5)
+        
+        MAX_SPEED = minSpeed + (relativeX * (500 - minSpeed))
+        speedLabel.Text = string.format("Flying Speed: %d", MAX_SPEED)
+    end
+end)
+
+-- Enhanced Flying Logic
+local flying = false
+local bodyVelocity
+local gyro
+local currentSpeed = 0
+
+local function getRoot()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid and humanoid.SeatPart then
+            return humanoid.SeatPart
+        end
+        return character:FindFirstChild("HumanoidRootPart")
+    end
+    return nil
+end
+
+local function startFlying()
+    if not flying then
+        flying = true
+        
+        local root = getRoot()
+        if root then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.Parent = root
+            
+            gyro = Instance.new("BodyGyro")
+            gyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            gyro.D = 50
+            gyro.P = 5000
+            gyro.Parent = root
+            
+            if player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.PlatformStand = true
+            end
+        end
+        
+        runService.RenderStepped:Connect(function(delta)
+            if flying then
+                local root = getRoot()
+                if root then
+                    gyro.CFrame = workspace.CurrentCamera.CFrame
+                    
+                    local moveDirection = Vector3.new(0, 0, 0)
+                    if userInputService:IsKeyDown(Enum.KeyCode.W) then
+                        moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
+                    end
+                    if userInputService:IsKeyDown(Enum.KeyCode.S) then
+                        moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
+                    end
+                    if userInputService:IsKeyDown(Enum.KeyCode.A) then
+                        moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
+                    end
+                    if userInputService:IsKeyDown(Enum.KeyCode.D) then
+                        moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
+                    end
+                    if userInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        moveDirection = moveDirection + Vector3.new(0, 1, 0)
+                    end
+                    if userInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        moveDirection = moveDirection - Vector3.new(0, 1, 0)
+                    end
+                    
+                    if moveDirection.Magnitude > 0 then
+                        moveDirection = moveDirection.Unit
+                        currentSpeed = math.min(currentSpeed + 2, MAX_SPEED)
+                    else
+                        currentSpeed = math.max(currentSpeed - 4, 0)
+                    end
+                    
+                    bodyVelocity.Velocity = moveDirection * currentSpeed
+                end
+            end
+        end)
+    end
+end
+
+local function stopFlying()
+    if flying then
+        flying = false
+        currentSpeed = 0
+        
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+        end
+        if gyro then
+            gyro:Destroy()
+        end
+        
+        local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+end
+
 -- Button Functionality
 flyButton.MouseButton1Click:Connect(function()
     if flying then
         stopFlying()
         flyButton.Text = "Start Fly"
+        flyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
     else
         startFlying()
         flyButton.Text = "Stop Fly"
+        flyButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
     end
 end)
 
 -- Tab Switching Logic
 flyTab.MouseButton1Click:Connect(function()
     flyFrame.Visible = true
+    controlsFrame.Visible = false
     unloadFrame.Visible = false
-    controlsFrame.Visible = false
-end)
-
-unloadTab.MouseButton1Click:Connect(function()
-    flyFrame.Visible = false
-    unloadFrame.Visible = true
-    controlsFrame.Visible = false
 end)
 
 controlsTab.MouseButton1Click:Connect(function()
     flyFrame.Visible = false
-    unloadFrame.Visible = false
     controlsFrame.Visible = true
+    unloadFrame.Visible = false
+end)
+
+unloadTab.MouseButton1Click:Connect(function()
+    flyFrame.Visible = false
+    controlsFrame.Visible = false
+    unloadFrame.Visible = true
+end)
+
+-- Unload Script Logic
+unloadButton.MouseButton1Click:Connect(function()
+    if flying then
+        stopFlying()
+    end
+    screenGui:Destroy()
 end)
 
 -- Toggle GUI Visibility with Insert
@@ -345,6 +414,6 @@ end)
 
 -- Initialize GUI State
 flyFrame.Visible = true
-unloadFrame.Visible = false
 controlsFrame.Visible = false
+unloadFrame.Visible = false
 mainWindow.Visible = true
