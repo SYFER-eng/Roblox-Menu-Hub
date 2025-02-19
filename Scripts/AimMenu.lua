@@ -30,7 +30,10 @@ local Settings = {
     BoneESP = false,
     ShowFOV = true,
     RainbowESP = false,
-    ESPColor = Color3.fromRGB(255, 255, 255)
+    ESPColor = Color3.fromRGB(255, 255, 255),
+    MaxDistance = 200,
+    Smoothness = 0.2,
+    InstantAim = false
 }
 
 -- ESP Objects Cache
@@ -102,7 +105,7 @@ local function InitializeESPObject(espObject)
     end
 end
 
--- Get Closest Player Function
+-- Enhanced GetClosestPlayer Function
 local function GetClosestPlayer()
     local closest = nil
     local shortestDistance = math.huge
@@ -117,12 +120,15 @@ local function GetClosestPlayer()
                              player.Character:FindFirstChild("HumanoidRootPart")
 
             if targetPart then
+                local distance = (Camera.CFrame.Position - targetPart.Position).Magnitude
+                if distance > Settings.MaxDistance then continue end
+
                 local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                 if onScreen then
-                    local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                    if distance < FOVCircle.Radius and distance < shortestDistance then
+                    local screenDistance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    if screenDistance < FOVCircle.Radius and screenDistance < shortestDistance then
                         closest = player
-                        shortestDistance = distance
+                        shortestDistance = screenDistance
                     end
                 end
             end
@@ -131,7 +137,42 @@ local function GetClosestPlayer()
     return closest
 end
 
--- Update ESP Function
+-- Enhanced Aimbot Function
+local function UpdateAimbot()
+    if Settings.AimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local target = GetClosestPlayer()
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild(Settings.AimPart) or 
+                             target.Character:FindFirstChild("Head") or 
+                             target.Character:FindFirstChild("HumanoidRootPart")
+
+            if targetPart then
+                local targetPos = targetPart.Position
+                
+                if targetPart.AssemblyLinearVelocity then
+                    local prediction = targetPart.AssemblyLinearVelocity * 0.1
+                    targetPos = targetPos + prediction
+                end
+
+                local mousePos = UserInputService:GetMouseLocation()
+                local targetScreen = Camera:WorldToViewportPoint(targetPos)
+                
+                local deltaX, deltaY
+                if Settings.InstantAim then
+                    deltaX = (targetScreen.X - mousePos.X)
+                    deltaY = (targetScreen.Y - mousePos.Y)
+                else
+                    deltaX = (targetScreen.X - mousePos.X) * Settings.Smoothness
+                    deltaY = (targetScreen.Y - mousePos.Y) * Settings.Smoothness
+                end
+
+                mousemoverel(deltaX, deltaY)
+            end
+        end
+    end
+end
+
+-- Enhanced UpdateESP Function
 local function UpdateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
@@ -146,59 +187,70 @@ local function UpdateESP()
             local humanoid = character and character:FindFirstChild("Humanoid")
 
             if character and humanoidRootPart and humanoid and Settings.ESPEnabled then
-                local vector, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
                 local distance = (Camera.CFrame.Position - humanoidRootPart.Position).Magnitude
-                local espColor = Settings.RainbowESP and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESPColor
+                
+                if distance <= Settings.MaxDistance then
+                    local vector, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+                    local espColor = Settings.RainbowESP and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESPColor
 
-                if onScreen then
-                    if Settings.BoxESP then
-                        local size = Vector2.new(2000 / vector.Z, 3000 / vector.Z)
-                        esp.Box.Size = size
-                        esp.Box.Position = Vector2.new(vector.X - size.X / 2, vector.Y - size.Y / 2)
-                        esp.Box.Color = espColor
-                        esp.Box.Visible = true
+                    if onScreen then
+                        if Settings.BoxESP then
+                            local size = Vector2.new(2000 / vector.Z, 3000 / vector.Z)
+                            esp.Box.Size = size
+                            esp.Box.Position = Vector2.new(vector.X - size.X / 2, vector.Y - size.Y / 2)
+                            esp.Box.Color = espColor
+                            esp.Box.Visible = true
 
-                        if Settings.NameESP then
-                            esp.Name.Text = string.format("%s\n[%d studs]", player.Name, math.floor(distance))
-                            esp.Name.Position = Vector2.new(vector.X, vector.Y - size.Y / 2 - 15)
-                            esp.Name.Color = espColor
-                            esp.Name.Visible = true
+                            if Settings.NameESP then
+                                esp.Name.Text = string.format("%s\n[%d studs]", player.Name, math.floor(distance))
+                                esp.Name.Position = Vector2.new(vector.X, vector.Y - size.Y / 2 - 15)
+                                esp.Name.Color = espColor
+                                esp.Name.Visible = true
+                            end
+
+                            if Settings.HealthESP then
+                                local healthBarSize = Vector2.new(3, size.Y)
+                                local healthBarPos = Vector2.new(vector.X - size.X / 2 - 5, vector.Y - size.Y / 2)
+                                
+                                esp.HealthBarOutline.Size = Vector2.new(5, size.Y + 2)
+                                esp.HealthBarOutline.Position = Vector2.new(healthBarPos.X - 1, healthBarPos.Y - 1)
+                                esp.HealthBarOutline.Color = Color3.new(0, 0, 0)
+                                esp.HealthBarOutline.Visible = true
+
+                                esp.HealthBar.Size = Vector2.new(3, size.Y * (humanoid.Health / humanoid.MaxHealth))
+                                esp.HealthBar.Position = healthBarPos
+                                esp.HealthBar.Color = Color3.fromRGB(255 * (1 - humanoid.Health / humanoid.MaxHealth), 255 * (humanoid.Health / humanoid.MaxHealth), 0)
+                                esp.HealthBar.Visible = true
+                            end
                         end
 
-                        if Settings.HealthESP then
-                            local healthBarSize = Vector2.new(3, size.Y)
-                            local healthBarPos = Vector2.new(vector.X - size.X / 2 - 5, vector.Y - size.Y / 2)
-                            
-                            esp.HealthBarOutline.Size = Vector2.new(5, size.Y + 2)
-                            esp.HealthBarOutline.Position = Vector2.new(healthBarPos.X - 1, healthBarPos.Y - 1)
-                            esp.HealthBarOutline.Color = Color3.new(0, 0, 0)
-                            esp.HealthBarOutline.Visible = true
+                        if Settings.BoneESP then
+                            for i, connection in ipairs(BoneConnections) do
+                                local part1 = character:FindFirstChild(connection[1])
+                                local part2 = character:FindFirstChild(connection[2])
 
-                            esp.HealthBar.Size = Vector2.new(3, size.Y * (humanoid.Health / humanoid.MaxHealth))
-                            esp.HealthBar.Position = healthBarPos
-                            esp.HealthBar.Color = Color3.fromRGB(255 * (1 - humanoid.Health / humanoid.MaxHealth), 255 * (humanoid.Health / humanoid.MaxHealth), 0)
-                            esp.HealthBar.Visible = true
-                        end
-                    end
+                                if part1 and part2 then
+                                    local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
+                                    local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
 
-                    if Settings.BoneESP then
-                        for i, connection in ipairs(BoneConnections) do
-                            local part1 = character:FindFirstChild(connection[1])
-                            local part2 = character:FindFirstChild(connection[2])
-
-                            if part1 and part2 then
-                                local pos1, vis1 = Camera:WorldToViewportPoint(part1.Position)
-                                local pos2, vis2 = Camera:WorldToViewportPoint(part2.Position)
-
-                                if vis1 and vis2 then
-                                    esp.Bones[i].From = Vector2.new(pos1.X, pos1.Y)
-                                    esp.Bones[i].To = Vector2.new(pos2.X, pos2.Y)
-                                    esp.Bones[i].Color = espColor
-                                    esp.Bones[i].Visible = true
-                                else
-                                    esp.Bones[i].Visible = false
+                                    if vis1 and vis2 then
+                                        esp.Bones[i].From = Vector2.new(pos1.X, pos1.Y)
+                                        esp.Bones[i].To = Vector2.new(pos2.X, pos2.Y)
+                                        esp.Bones[i].Color = espColor
+                                        esp.Bones[i].Visible = true
+                                    else
+                                        esp.Bones[i].Visible = false
+                                    end
                                 end
                             end
+                        end
+                    else
+                        esp.Box.Visible = false
+                        esp.Name.Visible = false
+                        esp.HealthBar.Visible = false
+                        esp.HealthBarOutline.Visible = false
+                        for _, bone in pairs(esp.Bones) do
+                            bone.Visible = false
                         end
                     end
                 else
@@ -223,30 +275,6 @@ local function UpdateESP()
     end
 end
 
--- Aimbot Function
-local function UpdateAimbot()
-    if Settings.AimbotEnabled and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        local target = GetClosestPlayer()
-        if target and target.Character then
-            local targetPart = target.Character:FindFirstChild(Settings.AimPart) or 
-                             target.Character:FindFirstChild("Head") or 
-                             target.Character:FindFirstChild("HumanoidRootPart")
-
-            if targetPart then
-                local targetPos = targetPart.Position
-                local mousePos = UserInputService:GetMouseLocation()
-                local targetScreen = Camera:WorldToViewportPoint(targetPos)
-
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-                mousemoverel(
-                    (targetScreen.X - mousePos.X),
-                    (targetScreen.Y - mousePos.Y)
-                )
-            end
-        end
-    end
-end
-
 -- Create UI Sections
 local CombatTab = Window:NewTab("Combat")
 local VisualsTab = Window:NewTab("Visuals")
@@ -262,8 +290,16 @@ CombatSection:NewToggle("Team Check", "Checks if player is on your team", functi
     Settings.TeamCheck = state
 end)
 
+CombatSection:NewToggle("Instant Aim", "Toggles between smooth and instant aiming", function(state)
+    Settings.InstantAim = state
+end)
+
 CombatSection:NewDropdown("Aim Part", "Select part to aim at", {"Head", "Torso", "HumanoidRootPart"}, function(part)
     Settings.AimPart = part
+end)
+
+CombatSection:NewSlider("Aim Smoothness", "Adjust aim smoothness", 1, 50, 20, function(value)
+    Settings.Smoothness = value / 100
 end)
 
 -- Visuals Section
@@ -292,10 +328,13 @@ VisualsSection:NewToggle("Rainbow ESP", "Makes ESP rainbow colored", function(st
     Settings.RainbowESP = state
 end)
 
+VisualsSection:NewSlider("ESP Distance", "Maximum ESP render distance", 50, 500, 200, function(value)
+    Settings.MaxDistance = value
+end)
+
 -- Main Loop
 RunService.RenderStepped:Connect(function()
-    local mousePos = UserInputService:GetMouseLocation()
-    FOVCircle.Position = mousePos
+    FOVCircle.Position = UserInputService:GetMouseLocation()
     
     UpdateAimbot()
     UpdateESP()
