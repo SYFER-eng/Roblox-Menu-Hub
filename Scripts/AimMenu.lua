@@ -49,16 +49,16 @@ local function createToggle(parent, name, setting, settingPath, position)
     toggle.Text = name .. ": OFF"
     toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggle.Parent = parent
-    
+
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 4)
     UICorner.Parent = toggle
-    
+
     toggle.MouseButton1Click:Connect(function()
         Settings[settingPath][setting] = not Settings[settingPath][setting]
         toggle.Text = name .. ": " .. (Settings[settingPath][setting] and "ON" or "OFF")
-        toggle.BackgroundColor3 = Settings[settingPath][setting] 
-            and Color3.fromRGB(60, 60, 60) 
+        toggle.BackgroundColor3 = Settings[settingPath][setting]
+            and Color3.fromRGB(60, 60, 60)
             or Color3.fromRGB(35, 35, 35)
     end)
     return toggle
@@ -86,7 +86,7 @@ local function CreateMenus()
             color = Color3.fromRGB(50, 50, 255)
         }
     }
-    
+
     for name, data in pairs(menus) do
         local menu = Instance.new("Frame")
         menu.Name = name
@@ -97,7 +97,7 @@ local function CreateMenus()
         menu.Active = true
         menu.Draggable = true
         menu.Parent = ScreenGui
-        
+
         -- Add shadow
         local shadow = Instance.new("ImageLabel")
         shadow.Name = "Shadow"
@@ -109,17 +109,17 @@ local function CreateMenus()
         shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
         shadow.ImageTransparency = 0.6
         shadow.Parent = menu
-        
+
         -- Title Bar
         local titleBar = Instance.new("Frame")
         titleBar.Size = UDim2.new(1, 0, 0, 30)
         titleBar.BackgroundColor3 = data.color
         titleBar.Parent = menu
-        
+
         local UICorner = Instance.new("UICorner")
         UICorner.CornerRadius = UDim.new(0, 4)
         UICorner.Parent = titleBar
-        
+
         local title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, 0, 1, 0)
         title.BackgroundTransparency = 1
@@ -127,7 +127,7 @@ local function CreateMenus()
         title.TextColor3 = Color3.new(1, 1, 1)
         title.Font = Enum.Font.GothamBold
         title.Parent = titleBar
-        
+
         -- Content Frame
         local content = Instance.new("ScrollingFrame")
         content.Size = UDim2.new(1, 0, 1, -30)
@@ -136,7 +136,7 @@ local function CreateMenus()
         content.BorderSizePixel = 0
         content.ScrollBarThickness = 4
         content.Parent = menu
-        
+
         -- Add specific toggles for each menu
         if name == "Combat" then
             createToggle(content, "Aimbot", "Enabled", "Aimbot", UDim2.new(0.05, 0, 0, 10))
@@ -159,6 +159,7 @@ local function CreateMenus()
         end
     end
 end
+
 -- ESP Objects Cache
 local ESPObjects = {}
 
@@ -177,14 +178,14 @@ local function CreateBoneESP(player)
         RightUpperLeg = Drawing.new("Line"),
         RightLowerLeg = Drawing.new("Line")
     }
-    
+
     for _, bone in pairs(bones) do
         bone.Thickness = 1
         bone.Color = Color3.new(1, 1, 1)
         bone.Transparency = 1
         bone.Visible = false
     end
-    
+
     return bones
 end
 
@@ -202,41 +203,41 @@ local function CreateESPObject(player)
         Bones = CreateBoneESP(player),
         Tracer = Drawing.new("Line")
     }
-    
+
     -- Box Setup
     espObject.BoxOutline.Thickness = 3
     espObject.BoxOutline.Color = Color3.new(0, 0, 0)
-    
+
     espObject.Box.Thickness = 1
     espObject.Box.Color = Color3.new(1, 1, 1)
-    
+
     espObject.BoxFill.Filled = true
     espObject.BoxFill.Transparency = 0.5
-    
+
     -- Name Setup
     espObject.Name.Size = 14
     espObject.Name.Center = true
     espObject.Name.Outline = true
     espObject.Name.Font = 2
-    
+
     -- Distance Setup
     espObject.Distance.Size = 13
     espObject.Distance.Center = true
     espObject.Distance.Outline = true
-    
+
     -- Health Setup
     espObject.HealthBackground.Thickness = 4
     espObject.HealthBackground.Color = Color3.new(0, 0, 0)
     espObject.Health.Thickness = 2
-    
+
     -- Head Dot Setup
     espObject.HeadDot.Radius = 3
     espObject.HeadDot.Filled = true
-    
+
     -- Tracer Setup
     espObject.Tracer.Thickness = 1
     espObject.Tracer.Color = Color3.new(1, 1, 1)
-    
+
     ESPObjects[player] = espObject
     return espObject
 end
@@ -250,25 +251,25 @@ local function UpdateESP()
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             local humanoid = character:FindFirstChild("Humanoid")
             local head = character:FindFirstChild("Head")
-            
+
             if Settings.ESP.Enabled and humanoidRootPart and humanoid and head then
                 local rootPos, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-                
+
                 if onScreen then
                     local distance = (Camera.CFrame.Position - humanoidRootPart.Position).Magnitude
                     local scaleFactor = 1 / (distance / 100)
-                    
+
                     -- Box ESP
                     if Settings.ESP.BoxESP then
                         local boxSize = Vector2.new(2000 * scaleFactor, 3200 * scaleFactor)
                         espObject.Box.Size = boxSize
-                        espObject.Box.Position = Vector2.new(rootPos.X - boxSize.X/2, rootPos.Y - boxSize.Y/2)
+                        espObject.Box.Position = Vector2.new(rootPos.X - boxSize.X / 2, rootPos.Y - boxSize.Y / 2)
                         espObject.Box.Visible = true
                         espObject.BoxOutline.Size = boxSize
                         espObject.BoxOutline.Position = espObject.Box.Position
                         espObject.BoxOutline.Visible = true
                     end
-                    
+
                     -- Skeleton ESP
                     if Settings.ESP.SkeletonESP then
                         for boneName, bone in pairs(espObject.Bones) do
@@ -281,12 +282,12 @@ local function UpdateESP()
                             end
                         end
                     end
-                    
+
                     -- Health ESP
                     if Settings.ESP.HealthESP then
                         local healthPercent = humanoid.Health / humanoid.MaxHealth
                         espObject.Health.Color = Color3.fromHSV(healthPercent * 0.3, 1, 1)
-                        local healthBarPos = Vector2.new(rootPos.X - espObject.Box.Size.X/2 - 5, rootPos.Y - espObject.Box.Size.Y/2)
+                        local healthBarPos = Vector2.new(rootPos.X - espObject.Box.Size.X / 2 - 5, rootPos.Y - espObject.Box.Size.Y / 2)
                         espObject.Health.From = healthBarPos
                         espObject.Health.To = Vector2.new(healthBarPos.X, healthBarPos.Y + espObject.Box.Size.Y * healthPercent)
                         espObject.Health.Visible = true
@@ -294,24 +295,24 @@ local function UpdateESP()
                         espObject.HealthBackground.To = Vector2.new(healthBarPos.X, healthBarPos.Y + espObject.Box.Size.Y)
                         espObject.HealthBackground.Visible = true
                     end
-                    
+
                     -- Name & Distance ESP
                     if Settings.ESP.NameESP then
-                        espObject.Name.Position = Vector2.new(rootPos.X, rootPos.Y - espObject.Box.Size.Y/2 - 15)
+                        espObject.Name.Position = Vector2.new(rootPos.X, rootPos.Y - espObject.Box.Size.Y / 2 - 15)
                         espObject.Name.Text = string.format("%s [%d studs]", player.Name, math.floor(distance))
                         espObject.Name.Visible = true
                     end
-                    
+
                     -- Head Dot ESP
                     if Settings.ESP.HeadDotESP then
                         local headPos = Camera:WorldToViewportPoint(head.Position)
                         espObject.HeadDot.Position = Vector2.new(headPos.X, headPos.Y)
                         espObject.HeadDot.Visible = true
                     end
-                    
+
                     -- Tracer ESP
                     if Settings.ESP.TracerESP then
-                        espObject.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                        espObject.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                         espObject.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
                         espObject.Tracer.Visible = true
                     end
@@ -337,14 +338,14 @@ local function AimbotUpdate()
         local closest = nil
         local maxDist = Settings.Aimbot.FOV
         local mousePos = UserInputService:GetMouseLocation()
-        
+
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
                 if not Settings.Aimbot.TeamCheck or player.Team ~= LocalPlayer.Team then
                     local character = player.Character
                     local humanoid = character:FindFirstChild("Humanoid")
                     local head = character:FindFirstChild("Head")
-                    
+
                     if humanoid and humanoid.Health > 0 and head then
                         local vector, onScreen = Camera:WorldToViewportPoint(head.Position)
                         if onScreen then
@@ -358,7 +359,7 @@ local function AimbotUpdate()
                 end
             end
         end
-        
+
         if closest then
             local targetPos = Camera:WorldToViewportPoint(closest.Position)
             mousemoverel(
