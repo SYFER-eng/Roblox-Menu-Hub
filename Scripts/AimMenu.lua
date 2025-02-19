@@ -33,7 +33,11 @@ local Settings = {
     ESPColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 200,
     Smoothness = 0.2,
-    InstantAim = false
+    NoSmoothing = false,
+    SilentAimEnabled = false,
+    WallCheck = false,
+    HitChance = 100,
+    PredictionMultiplier = 1
 }
 
 -- ESP Objects Cache
@@ -56,6 +60,19 @@ local BoneConnections = {
     {"RightUpperLeg", "RightLowerLeg"},
     {"RightLowerLeg", "RightFoot"}
 }
+
+-- Function to clear all ESP drawings
+local function ClearESP()
+    for _, esp in pairs(ESPObjects) do
+        esp.Box.Visible = false
+        esp.Name.Visible = false
+        esp.HealthBar.Visible = false
+        esp.HealthBarOutline.Visible = false
+        for _, bone in pairs(esp.Bones) do
+            bone.Visible = false
+        end
+    end
+end
 
 -- Create ESP Object Function
 local function CreateESPObject()
@@ -137,7 +154,51 @@ local function GetClosestPlayer()
     return closest
 end
 
--- Enhanced Aimbot Function
+-- Silent Aim Function
+local function GetSilentAimTarget()
+    local closest = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if Settings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+            
+            local targetPart = player.Character:FindFirstChild(Settings.AimPart) or 
+                             player.Character:FindFirstChild("Head") or 
+                             player.Character:FindFirstChild("HumanoidRootPart")
+
+            if targetPart then
+                local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                if onScreen then
+                    local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    
+                    if Settings.WallCheck then
+                        local rayParams = RaycastParams.new()
+                        rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+                        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+                        
+                        local raycastResult = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, rayParams)
+                        if raycastResult and raycastResult.Instance:IsDescendantOf(player.Character) then
+                            if distance < FOVCircle.Radius and distance < shortestDistance then
+                                closest = targetPart
+                                shortestDistance = distance
+                            end
+                        end
+                    else
+                        if distance < FOVCircle.Radius and distance < shortestDistance then
+                            closest = targetPart
+                            shortestDistance = distance
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- Enhanced UpdateAimbot Function
 local function UpdateAimbot()
     if Settings.AimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         local target = GetClosestPlayer()
@@ -158,7 +219,7 @@ local function UpdateAimbot()
                 local targetScreen = Camera:WorldToViewportPoint(targetPos)
                 
                 local deltaX, deltaY
-                if Settings.InstantAim then
+                if Settings.NoSmoothing then
                     deltaX = (targetScreen.X - mousePos.X)
                     deltaY = (targetScreen.Y - mousePos.Y)
                 else
@@ -172,8 +233,12 @@ local function UpdateAimbot()
     end
 end
 
--- Enhanced UpdateESP Function
+-- Enhanced UpdateESP Function with rapid refresh
 local function UpdateESP()
+    ClearESP() -- Clear all ESP drawings before redrawing
+
+    if not Settings.ESPEnabled then return end
+
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if not ESPObjects[player] then
@@ -186,7 +251,7 @@ local function UpdateESP()
             local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
             local humanoid = character and character:FindFirstChild("Humanoid")
 
-            if character and humanoidRootPart and humanoid and Settings.ESPEnabled then
+            if character and humanoidRootPart and humanoid then
                 local distance = (Camera.CFrame.Position - humanoidRootPart.Position).Magnitude
                 
                 if distance <= Settings.MaxDistance then
@@ -238,46 +303,45 @@ local function UpdateESP()
                                         esp.Bones[i].To = Vector2.new(pos2.X, pos2.Y)
                                         esp.Bones[i].Color = espColor
                                         esp.Bones[i].Visible = true
-                                    else
-                                        esp.Bones[i].Visible = false
                                     end
                                 end
                             end
                         end
-                    else
-                        esp.Box.Visible = false
-                        esp.Name.Visible = false
-                        esp.HealthBar.Visible = false
-                        esp.HealthBarOutline.Visible = false
-                        for _, bone in pairs(esp.Bones) do
-                            bone.Visible = false
-                        end
                     end
-                else
-                    esp.Box.Visible = false
-                    esp.Name.Visible = false
-                    esp.HealthBar.Visible = false
-                    esp.HealthBarOutline.Visible = false
-                    for _, bone in pairs(esp.Bones) do
-                        bone.Visible = false
-                    end
-                end
-            else
-                esp.Box.Visible = false
-                esp.Name.Visible = false
-                esp.HealthBar.Visible = false
-                esp.HealthBarOutline.Visible = false
-                for _, bone in pairs(esp.Bones) do
-                    bone.Visible = false
                 end
             end
         end
     end
 end
 
+-- Hook game's bullet creation/shooting function
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    if Settings.SilentAimEnabled and (method == "FireServer" or method == "Fire") then
+        local target = GetSilentAimTarget()
+        if target and math.random(1, 100) <= Settings.HitChance then
+            local velocity = target.AssemblyLinearVelocity
+            local prediction = velocity * Settings.PredictionMultiplier
+            
+            for _, v in pairs(args) do
+                if typeof(v) == "Vector3" then
+                    args[_] = target.Position + prediction
+                end
+            end
+            return oldNamecall(self, unpack(args))
+        end
+    end
+    
+    return oldNamecall(self, ...)
+end)
+
 -- Create UI Sections
 local CombatTab = Window:NewTab("Combat")
 local VisualsTab = Window:NewTab("Visuals")
+local SilentTab = Window:NewTab("Silent Aim")
 local SettingsTab = Window:NewTab("Settings")
 
 -- Combat Section
@@ -291,7 +355,7 @@ CombatSection:NewToggle("Team Check", "Checks if player is on your team", functi
 end)
 
 CombatSection:NewToggle("Instant Aim", "Toggles between smooth and instant aiming", function(state)
-    Settings.InstantAim = state
+    Settings.NoSmoothing = state
 end)
 
 CombatSection:NewDropdown("Aim Part", "Select part to aim at", {"Head", "Torso", "HumanoidRootPart"}, function(part)
@@ -332,12 +396,37 @@ VisualsSection:NewSlider("ESP Distance", "Maximum ESP render distance", 50, 500,
     Settings.MaxDistance = value
 end)
 
--- Main Loop
+-- Silent Aim Section
+local SilentSection = SilentTab:NewSection("Silent Aim")
+
+SilentSection:NewToggle("Enable Silent Aim", "Redirects bullets to target", function(state)
+    Settings.SilentAimEnabled = state
+end)
+
+SilentSection:NewToggle("Wall Check", "Check if target is behind walls", function(state)
+    Settings.WallCheck = state
+end)
+
+SilentSection:NewSlider("Hit Chance", "Adjust hit probability", 0, 100, 100, function(value)
+    Settings.HitChance = value
+end)
+
+SilentSection:NewSlider("Prediction", "Adjust target prediction", 0, 200, 100, function(value)
+    Settings.PredictionMultiplier = value / 100
+end)
+
+-- Main Loop with rapid ESP refresh
+local lastTick = tick()
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = UserInputService:GetMouseLocation()
     
     UpdateAimbot()
-    UpdateESP()
+    
+    -- Refresh ESP every 1ms
+    if tick() - lastTick >= 0.001 then
+        UpdateESP()
+        lastTick = tick()
+    end
 end)
 
 -- Cleanup
