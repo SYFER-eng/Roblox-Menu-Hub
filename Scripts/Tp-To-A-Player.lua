@@ -1,3 +1,4 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Loading/Tp.lua",true))()
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local tweenService = game:GetService("TweenService")
