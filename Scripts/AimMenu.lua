@@ -17,7 +17,7 @@ Settings = {
         Snaplines = false,
         TeamCheck = false,
         Rainbow = false,
-        BoxColor = Color3.fromRGB(147, 112, 219),
+        BoxColor = Color3.fromRGB(255, 0, 255),
         Players = {},
         Tracers = {}
     },
@@ -55,14 +55,34 @@ end
 local MainFrame = Instance.new("Frame")
 
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 669, 0, 400)
+MainFrame.Size = UDim2.new(0, 749, 0, 520)
 MainFrame.Position = UDim2.new(0.5, -334, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ZIndex = 999999
 MainFrame.Parent = ScreenGui
+
+local BottomText = Instance.new("TextLabel")
+BottomText.Name = "BottomText"
+BottomText.Size = UDim2.new(1, 0, 0, 20)
+BottomText.Position = UDim2.new(0, 0, 1, -20)
+BottomText.BackgroundTransparency = 1
+BottomText.Text = "Press End Or Delete To Close The Menu"
+BottomText.TextColor3 = Color3.fromRGB(255, 0, 255) -- Updated to bright magenta
+BottomText.Font = Enum.Font.GothamSemibold
+BottomText.TextSize = 14
+BottomText.ZIndex = 999999
+BottomText.Parent = MainFrame
+
+local UIGradient_Bottom = Instance.new("UIGradient")
+UIGradient_Bottom.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+}
+UIGradient_Bottom.Parent = BottomText
+
 
 -- UI Elements
 local UICorner_Main = Instance.new("UICorner")
@@ -78,7 +98,7 @@ Shadow.Position = UDim2.new(-0.0293, 0, -0.0244, 0)
 Shadow.Size = UDim2.new(1.06, 0, 1.06, 0)
 Shadow.ZIndex = 999998
 Shadow.Image = "rbxassetid://5554236805"
-Shadow.ImageColor3 = Color3.fromRGB(147, 112, 219)
+Shadow.ImageColor3 = Color3.fromRGB(255, 0, 255)
 Shadow.ImageTransparency = 0.4
 Shadow.Parent = MainFrame
 
@@ -96,7 +116,7 @@ Title.Parent = MainFrame
 
 local UIGradient_Title = Instance.new("UIGradient")
 UIGradient_Title.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(147, 112, 219)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
 }
 UIGradient_Title.Parent = Title
@@ -110,12 +130,12 @@ FOVCircle.Filled = false
 FOVCircle.Visible = false
 FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 1
-FOVCircle.Color = Color3.fromRGB(147, 112, 219)
+FOVCircle.Color = Color3.fromRGB(255, 0, 255)
 -- Navigation Setup
 local Navigation = Instance.new("Frame")
 Navigation.Size = UDim2.new(1, 0, 0, 50)
 Navigation.Position = UDim2.new(0, 0, 0, 40)
-Navigation.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Navigation.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Navigation.ZIndex = 999999
 Navigation.Parent = MainFrame
 
@@ -131,7 +151,7 @@ local function CreatePage(name)
     Page.Position = UDim2.new(0, 0, 0, 90)
     Page.BackgroundTransparency = 1
     Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(147, 112, 219)
+    Page.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
     Page.ZIndex = 999999
     Page.Parent = MainFrame
 
@@ -240,7 +260,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     local SliderButton = Instance.new("TextButton")
     SliderButton.Size = UDim2.new(0.1, 0, 1.5, 0)
     SliderButton.Position = UDim2.new((default - min)/(max - min), 0, -0.25, 0)
-    SliderButton.BackgroundColor3 = Color3.fromRGB(147, 112, 219)
+    SliderButton.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
     SliderButton.Text = ""
     SliderButton.Parent = SliderBar
 
@@ -307,7 +327,7 @@ for i, pageName in ipairs(PageOrder) do
         for _, button in pairs(NavButtons) do
             button.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         end
-        btn.BackgroundColor3 = Color3.fromRGB(147, 112, 219)
+        btn.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
     end)
 end
 
@@ -395,7 +415,7 @@ end)
 local function CreateSnapline(player)
     local Line = Drawing.new("Line")
     Line.Thickness = 2 -- Increased thickness for glow effect
-    Line.Color = Color3.fromRGB(147, 112, 219) -- Default color before rainbow toggle
+    Line.Color = Color3.fromRGB(255, 0, 255) -- Default color before rainbow toggle
     Line.Transparency = 1
     Line.Visible = false
     Line.ZIndex = 999998
@@ -671,7 +691,7 @@ InitializeUI()
 
 -- Show first page by default
 Pages.ESP.Visible = true
-NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(147, 112, 219)
+NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
 
 -- Toggle GUI visibility
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
