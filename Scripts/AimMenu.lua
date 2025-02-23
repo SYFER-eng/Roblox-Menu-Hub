@@ -453,7 +453,7 @@ local function UpdateESP()
                 -- Update Box ESP
                 if Settings.ESP.Boxes then
                     local size = (workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(3, 6, 0)).Y - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-3, -3, 0)).Y) / 2
-                    esp.Box.Size = Vector2.new(size * 1.5, size * 2)
+                    esp.Box.Size = Vector2.new(size * 0.7, size * 1)
                     esp.Box.Position = Vector2.new(screenPos.X - esp.Box.Size.X / 2, screenPos.Y - esp.Box.Size.Y / 2)
                     esp.Box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
                     esp.Box.Visible = true
