@@ -52,6 +52,7 @@ end
 
 -- Main Frame Setup
 local MainFrame = Instance.new("Frame")
+
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 669, 0, 400)
 MainFrame.Position = UDim2.new(0.5, -334, 0.5, -200)
@@ -160,6 +161,7 @@ local function CreateNavButton(text, position)
 
     return Button
 end
+
 
 -- Create Toggle Function
 local function CreateToggle(parent, name, callback)
@@ -629,7 +631,7 @@ NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(147, 112, 219)
 
 -- Toggle GUI visibility
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightShift then
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
     end
 end)
