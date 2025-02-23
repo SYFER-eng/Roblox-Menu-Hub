@@ -623,6 +623,49 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+local function DisableAllFeatures()
+    -- ESP Settings
+    Settings.ESP.Enabled = false
+    Settings.ESP.Boxes = false
+    Settings.ESP.Names = false
+    Settings.ESP.Distance = false
+    Settings.ESP.Snaplines = false
+    Settings.ESP.TeamCheck = false
+    Settings.ESP.Rainbow = false
+    
+    -- Aimbot Settings
+    Settings.Aimbot.Enabled = false
+    Settings.Aimbot.TeamCheck = false
+    Settings.Aimbot.ShowFOV = false
+    FOVCircle.Visible = false
+    
+    -- Misc Settings
+    Settings.Misc.NoRecoil = false
+    Settings.Misc.BunnyHop = false
+    
+    -- Clean up ESP drawings
+    for _, esp in pairs(Settings.ESP.Players) do
+        esp.Box.Visible = false
+        esp.Name.Visible = false
+        esp.Distance.Visible = false
+        esp.Snapline.Visible = false
+    end
+    
+    -- Remove the GUI
+    if ScreenGui then
+        ScreenGui:Destroy()
+    end
+end
+
+-- Add key detection for End and Delete keys
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.End or input.KeyCode == Enum.KeyCode.Delete then
+            DisableAllFeatures()
+        end
+    end
+end)
+
 -- Initialize the UI
 InitializeUI()
 
