@@ -1,4 +1,3 @@
---Find Lua scripts online and paste them here!
 print("Welcome To Syfer-eng's World!")-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -340,6 +339,54 @@ local function GetClosestPlayer()
     end
     return closestPlayer
 end
+
+-- Function to make the player's character face the target
+local function MakePlayerLookAtTarget(target)
+    if target and target.Character then
+        local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
+        if targetPart then
+            -- Get the target position and the player's humanoid root part position
+            local targetPosition = targetPart.Position
+            local playerCharacter = Players.LocalPlayer.Character
+            local playerHumanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
+            
+            -- Ensure the player character exists and the humanoid root part is found
+            if playerHumanoidRootPart then
+                -- Calculate the direction vector to the target
+                local direction = (targetPosition - playerHumanoidRootPart.Position).unit
+                
+                -- Create a new CFrame to make the character rotate toward the target
+                local newCFrame = CFrame.lookAt(playerHumanoidRootPart.Position, targetPosition)
+                
+                -- Update the character's HumanoidRootPart to look at the target
+                playerHumanoidRootPart.CFrame = newCFrame
+            end
+        end
+    end
+end
+
+-- Function to detect right mouse button press and hold
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton2 then
+        aiming = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        aiming = false
+    end
+end)
+
+-- Main loop to continuously aim and make your player look at the closest player when aiming
+RunService.RenderStepped:Connect(function()
+    if aiming and Settings.Aimbot.Enabled then
+        local closestPlayer = GetClosestPlayer()
+        if closestPlayer then
+            MakePlayerLookAtTarget(closestPlayer)
+        end
+    end
+end)
 
 -- ESP Implementation
 local function CreateSnapline(player)
