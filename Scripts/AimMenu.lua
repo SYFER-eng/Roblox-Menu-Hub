@@ -36,7 +36,7 @@ Settings = {
 
 -- Create Main GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PhantomMenu"
+ScreenGui.Name = "Syfer-eng's Menu"
 ScreenGui.DisplayOrder = 999999
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
@@ -86,7 +86,7 @@ Title.Name = "MenuTitle"
 Title.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "✦ PHANTOM MENU ✦"
+Title.Text = "•Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ•"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 22
 Title.ZIndex = 999999
