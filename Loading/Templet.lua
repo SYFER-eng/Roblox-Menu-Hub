@@ -51,7 +51,7 @@ end)
 local label = Instance.new("TextLabel")
 label.Size = UDim2.new(0.75, 0, 1, 0)
 label.Position = UDim2.new(0.18, 0, 0, 0)
-label.Text = "Aimbot Script Loaded Successfully!"
+label.Text = "Script Loaded Successfully!"
 label.TextColor3 = Color3.fromRGB(255, 255, 255)
 label.Font = Enum.Font.GothamBold
 label.TextSize = 18
