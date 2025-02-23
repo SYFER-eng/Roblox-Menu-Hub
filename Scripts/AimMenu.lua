@@ -1,4 +1,5 @@
--- Services
+--Find Lua scripts online and paste them here!
+print("Hello world!")-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -308,6 +309,38 @@ for i, pageName in ipairs(PageOrder) do
     end)
 end
 
+local function GetClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            if Settings.Aimbot.TeamCheck and player.Team == Players.LocalPlayer.Team then
+                continue
+            end
+
+            local character = player.Character
+            if character then
+                local targetPart = character:FindFirstChild(Settings.Aimbot.TargetPart)
+                if targetPart then
+                    local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
+                    if onScreen then
+                        local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                        if distance <= Settings.Aimbot.FOV then
+                            if distance < shortestDistance then
+                                closestPlayer = player
+                                shortestDistance = distance
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
 -- ESP Implementation
 local function CreateSnapline(player)
     local Line = Drawing.new("Line")
@@ -319,82 +352,107 @@ local function CreateSnapline(player)
     Settings.ESP.Tracers[player] = Line
 end
 
+-- ESP Implementation
 local function CreateESP(player)
-    CreateSnapline(player)
-    local Box = Drawing.new("Square")
-    Box.Thickness = 2 -- Increased thickness for better visibility
-    Box.Filled = false
-    Box.Color = Settings.ESP.BoxColor
-    Box.Visible = false
-    Box.ZIndex = 999999
+    local esp = {
+        Box = Drawing.new("Square"),
+        Name = Drawing.new("Text"),
+        Distance = Drawing.new("Text"),
+        Snapline = Drawing.new("Line")
+    }
 
-    -- Create a glow effect for the box (outer box)
-    local OuterBox = Drawing.new("Square")
-    OuterBox.Thickness = 4 -- Increased thickness for glow
-    OuterBox.Filled = false
-    OuterBox.Color = Color3.fromRGB(147, 112, 219) -- Default color for outer box
-    OuterBox.Visible = false
-    OuterBox.ZIndex = 999998
+    esp.Box.Visible = false
+    esp.Box.Color = Settings.ESP.BoxColor
+    esp.Box.Thickness = 2
+    esp.Box.Filled = false
+    esp.Box.Transparency = 1
 
-    Settings.ESP.Players[player] = { Box = Box, OuterBox = OuterBox }
+    esp.Name.Visible = false
+    esp.Name.Color = Color3.new(1, 1, 1)
+    esp.Name.Size = 14
+    esp.Name.Center = true
+    esp.Name.Outline = true
+
+    esp.Distance.Visible = false
+    esp.Distance.Color = Color3.new(1, 1, 1)
+    esp.Distance.Size = 12
+    esp.Distance.Center = true
+    esp.Distance.Outline = true
+
+    esp.Snapline.Visible = false
+    esp.Snapline.Color = Settings.ESP.BoxColor
+    esp.Snapline.Thickness = 1
+    esp.Snapline.Transparency = 1
+
+    Settings.ESP.Players[player] = esp
 end
 
 local function UpdateESP()
-    local camera = workspace.CurrentCamera
-    local cameraPosition = camera.CFrame.Position
-    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-
     for player, esp in pairs(Settings.ESP.Players) do
-        local box = esp.Box
-        local outerBox = esp.OuterBox
-        if player.Character and player ~= Players.LocalPlayer then
-            if Settings.ESP.TeamCheck and player.Team == Players.LocalPlayer.Team then
-                box.Visible = false
-                outerBox.Visible = false
-                Settings.ESP.Tracers[player].Visible = false
-                continue
-            end
-
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            local humanoid = player.Character:FindFirstChild("Humanoid")
+        if player.Character and player ~= Players.LocalPlayer and player.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoidRootPart = player.Character.HumanoidRootPart
             local head = player.Character:FindFirstChild("Head")
-
-            if humanoidRootPart and humanoid and head and Settings.ESP.Enabled then
-                local vector, onScreen = camera:WorldToViewportPoint(humanoidRootPart.Position)
-                local headPos = camera:WorldToViewportPoint(head.Position)
-
-                if onScreen then
-                    local rootPos = humanoidRootPart.Position
-                    local screenPos = camera:WorldToViewportPoint(rootPos)
-
-                    -- Set box size and position
-                    box.Size = Vector2.new(1000 / screenPos.Z, headPos.Y - screenPos.Y)
-                    box.Position = Vector2.new(screenPos.X - box.Size.X / 2, screenPos.Y - box.Size.Y / 2)
-                    box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
-                    box.Visible = Settings.ESP.Boxes
-
-                    -- Set outer box size and position (for glow effect)
-                    outerBox.Size = box.Size + Vector2.new(4, 4) -- Add glow around the box
-                    outerBox.Position = box.Position - Vector2.new(2, 2)
-                    outerBox.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
-                    outerBox.Visible = Settings.ESP.Boxes
-
-                    -- Handle tracers (snaplines)
-                    if Settings.ESP.Snaplines then
-                        local tracer = Settings.ESP.Tracers[player]
-                        tracer.From = screenCenter
-                        tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                        tracer.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Color3.fromRGB(147, 112, 219)
-                        tracer.Visible = true
-                    else
-                        Settings.ESP.Tracers[player].Visible = false
-                    end
-                else
-                    box.Visible = false
-                    outerBox.Visible = false
-                    Settings.ESP.Tracers[player].Visible = false
+            local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position)
+            
+            if onScreen and Settings.ESP.Enabled then
+                if Settings.ESP.TeamCheck and player.Team == Players.LocalPlayer.Team then
+                    esp.Box.Visible = false
+                    esp.Name.Visible = false
+                    esp.Distance.Visible = false
+                    esp.Snapline.Visible = false
+                    continue
                 end
+
+                -- Update Box ESP
+                if Settings.ESP.Boxes then
+                    local size = (workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(3, 6, 0)).Y - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-3, -3, 0)).Y) / 2
+                    esp.Box.Size = Vector2.new(size * 1.5, size * 2)
+                    esp.Box.Position = Vector2.new(screenPos.X - esp.Box.Size.X / 2, screenPos.Y - esp.Box.Size.Y / 2)
+                    esp.Box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
+                    esp.Box.Visible = true
+                else
+                    esp.Box.Visible = false
+                end
+
+                -- Update Snaplines
+                if Settings.ESP.Snaplines then
+                    esp.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+                    esp.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
+                    esp.Snapline.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
+                    esp.Snapline.Visible = true
+                else
+                    esp.Snapline.Visible = false
+                end
+
+                -- Update Names
+                if Settings.ESP.Names and head then
+                    esp.Name.Position = Vector2.new(screenPos.X, screenPos.Y - esp.Box.Size.Y / 2 - 15)
+                    esp.Name.Text = player.Name
+                    esp.Name.Visible = true
+                else
+                    esp.Name.Visible = false
+                end
+
+                -- Update Distance
+                if Settings.ESP.Distance then
+                    local distance = math.floor((humanoidRootPart.Position - workspace.CurrentCamera.CFrame.Position).Magnitude)
+                    esp.Distance.Position = Vector2.new(screenPos.X, screenPos.Y + esp.Box.Size.Y / 2 + 5)
+                    esp.Distance.Text = tostring(distance) .. " studs"
+                    esp.Distance.Visible = true
+                else
+                    esp.Distance.Visible = false
+                end
+            else
+                esp.Box.Visible = false
+                esp.Name.Visible = false
+                esp.Distance.Visible = false
+                esp.Snapline.Visible = false
             end
+        else
+            esp.Box.Visible = false
+            esp.Name.Visible = false
+            esp.Distance.Visible = false
+            esp.Snapline.Visible = false
         end
     end
 end
@@ -483,9 +541,32 @@ end)
 
 -- Main Update Loop
 RunService.RenderStepped:Connect(function()
-    UpdateESP()
+    UpdateESP() -- Make sure this is called every frame
+    if Settings.Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local target = GetClosestPlayer()
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
+            if targetPart then
+                local targetPos = targetPart.Position
+                local smoothness = Settings.Aimbot.Smoothness
+                
+                local currentCFrame = workspace.CurrentCamera.CFrame
+                local targetCFrame = CFrame.new(currentCFrame.Position, targetPos)
+                
+                if smoothness > 1 then
+                    workspace.CurrentCamera.CFrame = currentCFrame:Lerp(targetCFrame, 1 / smoothness)
+                else
+                    workspace.CurrentCamera.CFrame = targetCFrame
+                    
+                end
+            end
+        end
+    end
+
     if Settings.Aimbot.ShowFOV then
+        UpdateESP()
         FOVCircle.Position = UserInputService:GetMouseLocation()
+        FOVCircle.Radius = Settings.Aimbot.FOV
         FOVCircle.Visible = true
     else
         FOVCircle.Visible = false
