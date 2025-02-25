@@ -1,0 +1,586 @@
+print("Welcome To Syfer-eng's World!")
+
+-- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local Camera = workspace.CurrentCamera
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local UIS = UserInputService
+
+-- Complete Settings Structure
+local Settings = {
+    ESP = {
+        Enabled = false,
+        Boxes = false,
+        Names = false,
+        Distance = false,
+        Health = false,
+        Snaplines = false,
+        TeamCheck = false,
+        Rainbow = false,
+        BoxColor = Color3.fromRGB(255, 0, 255),
+        Players = {},
+        Tracers = {}
+    },
+    Aimbot = {
+        Enabled = false,
+        TeamCheck = false,
+        Smoothness = 1,
+        FOV = 100,
+        TargetPart = "Head",
+        ShowFOV = false
+    },
+    Combat = {
+        SilentAim = false,
+        TriggerBot = false,
+        HitChance = 100,
+        DamageMultiplier = 1
+    },
+    Visual = {
+        FullBright = false,
+        NoFog = false,
+        CustomFOV = 90,
+        ESPColor = Color3.fromRGB(255, 0, 255)
+    },
+    Misc = {
+        SpeedHack = false,
+        InfiniteJump = false,
+        NoClip = false,
+        BunnyHop = false,
+        FOVEnabled = false,
+        FOVValue = 70,
+        DefaultFOV = workspace.CurrentCamera.FieldOfView,
+        SpeedMultiplier = 2
+    },
+    UI = {
+        MenuColor = Color3.fromRGB(255, 0, 255),
+        ToggleKey = Enum.KeyCode.Insert
+    }
+}
+-- UI Creation Functions
+local function CreateButton(parent, text, callback)
+    local Button = Instance.new("TextButton")
+    Button.Name = text .. "_Button"
+    Button.Size = UDim2.new(0.9, 0, 0, 40)
+    Button.Position = UDim2.new(0.05, 0, 0, 0)
+    Button.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.GothamSemibold
+    Button.TextSize = 14
+    Button.Parent = parent
+    Button.AutoButtonColor = false
+    Button.ZIndex = 1000
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = Button
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Settings.UI.MenuColor
+    UIStroke.Thickness = 1
+    UIStroke.Parent = Button
+
+    Button.MouseButton1Click:Connect(function()
+        callback()
+        TweenService:Create(Button, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+        }):Play()
+        wait(0.1)
+        TweenService:Create(Button, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        }):Play()
+    end)
+
+    return Button
+end
+
+local function CreateToggle(parent, text, callback)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Name = text .. "_Toggle"
+    ToggleFrame.Size = UDim2.new(0.9, 0, 0, 40)
+    ToggleFrame.Position = UDim2.new(0.05, 0, 0, 0)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    ToggleFrame.Parent = parent
+    ToggleFrame.ZIndex = 1000
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = ToggleFrame
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+    ToggleButton.BackgroundTransparency = 1
+    ToggleButton.Text = text
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.Font = Enum.Font.GothamSemibold
+    ToggleButton.TextSize = 14
+    ToggleButton.Parent = ToggleFrame
+    ToggleButton.ZIndex = 1001
+
+    local ToggleIndicator = Instance.new("Frame")
+    ToggleIndicator.Size = UDim2.new(0, 20, 0, 20)
+    ToggleIndicator.Position = UDim2.new(0.95, -25, 0.5, -10)
+    ToggleIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    ToggleIndicator.Parent = ToggleFrame
+    ToggleIndicator.ZIndex = 1002
+
+    local UICorner2 = Instance.new("UICorner")
+    UICorner2.CornerRadius = UDim.new(0, 4)
+    UICorner2.Parent = ToggleIndicator
+
+    local enabled = false
+    ToggleButton.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        TweenService:Create(ToggleIndicator, TweenInfo.new(0.2), {
+            BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        }):Play()
+        callback(enabled)
+    end)
+
+    return ToggleFrame
+end
+local function CreateSlider(parent, text, min, max, default, callback)
+    local SliderFrame = Instance.new("Frame")
+    SliderFrame.Name = text .. "_Slider"
+    SliderFrame.Size = UDim2.new(0.9, 0, 0, 60)
+    SliderFrame.Position = UDim2.new(0.05, 0, 0, 0)
+    SliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    SliderFrame.Parent = parent
+    SliderFrame.ZIndex = 1000
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = SliderFrame
+
+    local SliderTitle = Instance.new("TextLabel")
+    SliderTitle.Size = UDim2.new(1, 0, 0, 30)
+    SliderTitle.BackgroundTransparency = 1
+    SliderTitle.Text = text
+    SliderTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SliderTitle.Font = Enum.Font.GothamSemibold
+    SliderTitle.TextSize = 14
+    SliderTitle.Parent = SliderFrame
+    SliderTitle.ZIndex = 1001
+
+    local SliderBar = Instance.new("Frame")
+    SliderBar.Size = UDim2.new(0.9, 0, 0, 4)
+    SliderBar.Position = UDim2.new(0.05, 0, 0.7, 0)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    SliderBar.Parent = SliderFrame
+    SliderBar.ZIndex = 1001
+
+    local UICorner2 = Instance.new("UICorner")
+    UICorner2.CornerRadius = UDim.new(1, 0)
+    UICorner2.Parent = SliderBar
+
+    local SliderFill = Instance.new("Frame")
+    SliderFill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Settings.UI.MenuColor
+    SliderFill.Parent = SliderBar
+    SliderFill.ZIndex = 1002
+
+    local UICorner3 = Instance.new("UICorner")
+    UICorner3.CornerRadius = UDim.new(1, 0)
+    UICorner3.Parent = SliderFill
+
+    local SliderButton = Instance.new("TextButton")
+    SliderButton.Size = UDim2.new(0, 16, 0, 16)
+    SliderButton.Position = UDim2.new((default - min)/(max - min), -8, 0.5, -8)
+    SliderButton.BackgroundColor3 = Settings.UI.MenuColor
+    SliderButton.Text = ""
+    SliderButton.Parent = SliderBar
+    SliderButton.ZIndex = 1003
+
+    local UICorner4 = Instance.new("UICorner")
+    UICorner4.CornerRadius = UDim.new(1, 0)
+    UICorner4.Parent = SliderButton
+
+    local ValueLabel = Instance.new("TextLabel")
+    ValueLabel.Size = UDim2.new(0, 50, 0, 20)
+    ValueLabel.Position = UDim2.new(0.9, 0, 0, 5)
+    ValueLabel.BackgroundTransparency = 1
+    ValueLabel.Text = tostring(default)
+    ValueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValueLabel.Font = Enum.Font.GothamSemibold
+    ValueLabel.TextSize = 14
+    ValueLabel.Parent = SliderFrame
+    ValueLabel.ZIndex = 1001
+
+    local dragging = false
+    SliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local barPos = SliderBar.AbsolutePosition
+            local barSize = SliderBar.AbsoluteSize
+            local percent = math.clamp((mousePos.X - barPos.X) / barSize.X, 0, 1)
+            local value = math.floor(min + (max - min) * percent)
+            
+            SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            SliderButton.Position = UDim2.new(percent, -8, 0.5, -8)
+            ValueLabel.Text = tostring(value)
+            callback(value)
+        end
+    end)
+
+    return SliderFrame
+end
+-- Create Pages Function
+local function CreatePage(name)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name
+    Page.Size = UDim2.new(1, -20, 1, -90)
+    Page.Position = UDim2.new(0, 10, 0, 80)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.ScrollBarThickness = 4
+    Page.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
+    Page.ZIndex = 1000
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = Page
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 10)
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    UIListLayout.Changed:Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    return Page
+end
+
+-- FOV Circle Setup
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 100
+FOVCircle.Radius = Settings.Aimbot.FOV
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+FOVCircle.ZIndex = 999
+FOVCircle.Transparency = 1
+FOVCircle.Color = Settings.UI.MenuColor
+
+-- Create Main GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Syfer-eng's Menu"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.ResetOnSpawn = false
+
+-- Try to protect GUI from being destroyed
+pcall(function()
+    if syn then
+        syn.protect_gui(ScreenGui)
+    end
+    ScreenGui.Parent = CoreGui
+end)
+
+-- Main Frame Setup
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 750, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Text = "•Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ•"
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.Parent = TitleBar
+
+-- Navigation Tabs
+local TabFrame = Instance.new("Frame")
+TabFrame.Name = "TabFrame"
+TabFrame.Size = UDim2.new(1, 0, 0, 40)
+TabFrame.Position = UDim2.new(0, 0, 0, 40)
+TabFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+TabFrame.BorderSizePixel = 0
+TabFrame.Parent = MainFrame
+
+-- Create Pages
+local Pages = {
+    Combat = CreatePage("Combat"),
+    ESP = CreatePage("ESP"),
+    Visuals = CreatePage("Visuals"),
+    Misc = CreatePage("Misc")
+}
+
+-- Tab Buttons
+local TabButtons = {}
+local function CreateTab(name, position)
+    local TabButton = Instance.new("TextButton")
+    TabButton.Name = name .. "Tab"
+    TabButton.Size = UDim2.new(0.25, -2, 1, -4)
+    TabButton.Position = UDim2.new(0.25 * position, 1, 0, 2)
+    TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    TabButton.Text = name
+    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabButton.Font = Enum.Font.GothamSemibold
+    TabButton.TextSize = 14
+    TabButton.Parent = TabFrame
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = TabButton
+    
+    TabButtons[name] = TabButton
+    return TabButton
+end
+-- Create Tab Buttons and Setup Page Switching
+local TabOrder = {"Combat", "ESP", "Visuals", "Misc"}
+for i, tabName in ipairs(TabOrder) do
+    local button = CreateTab(tabName, i-1)
+    
+    button.MouseButton1Click:Connect(function()
+        -- Hide all pages
+        for _, page in pairs(Pages) do
+            page.Visible = false
+        end
+        -- Show selected page
+        Pages[tabName].Visible = true
+        
+        -- Update button colors
+        for _, btn in pairs(TabButtons) do
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+        end
+        button.BackgroundColor3 = Settings.UI.MenuColor
+    end
+end
+
+-- Show default page
+Pages.Combat.Visible = true
+TabButtons.Combat.BackgroundColor3 = Settings.UI.MenuColor
+
+-- Combat Page Features
+CreateToggle(Pages.Combat, "Enable Aimbot", function(enabled)
+    Settings.Aimbot.Enabled = enabled
+end)
+
+CreateToggle(Pages.Combat, "Show FOV Circle", function(enabled)
+    Settings.Aimbot.ShowFOV = enabled
+    FOVCircle.Visible = enabled
+end)
+
+CreateSlider(Pages.Combat, "FOV Size", 10, 800, Settings.Aimbot.FOV, function(value)
+    Settings.Aimbot.FOV = value
+    FOVCircle.Radius = value
+end)
+
+CreateSlider(Pages.Combat, "Aimbot Smoothness", 1, 10, Settings.Aimbot.Smoothness, function(value)
+    Settings.Aimbot.Smoothness = value
+end)
+
+-- ESP Page Features
+CreateToggle(Pages.ESP, "Enable ESP", function(enabled)
+    Settings.ESP.Enabled = enabled
+end)
+
+CreateToggle(Pages.ESP, "Box ESP", function(enabled)
+    Settings.ESP.Boxes = enabled
+end)
+
+CreateToggle(Pages.ESP, "Name ESP", function(enabled)
+    Settings.ESP.Names = enabled
+end)
+
+CreateToggle(Pages.ESP, "Distance ESP", function(enabled)
+    Settings.ESP.Distance = enabled
+end)
+
+CreateToggle(Pages.ESP, "Team Check", function(enabled)
+    Settings.ESP.TeamCheck = enabled
+end)
+-- Visuals Page Features
+CreateToggle(Pages.Visuals, "Full Bright", function(enabled)
+    Settings.Visual.FullBright = enabled
+    if enabled then
+        game.Lighting.Brightness = 2
+        game.Lighting.ClockTime = 14
+        game.Lighting.GlobalShadows = false
+    else
+        game.Lighting.Brightness = 1
+        game.Lighting.ClockTime = 12
+        game.Lighting.GlobalShadows = true
+    end
+end)
+
+-- Misc Page Features with FOV
+CreateToggle(Pages.Misc, "Custom FOV", function(enabled)
+    Settings.Misc.FOVEnabled = enabled
+    if enabled then
+        workspace.CurrentCamera.FieldOfView = Settings.Misc.FOVValue
+    else
+        workspace.CurrentCamera.FieldOfView = Settings.Misc.DefaultFOV
+    end
+end)
+
+CreateSlider(Pages.Misc, "FOV Value", 30, 120, Settings.Misc.DefaultFOV, function(value)
+    Settings.Misc.FOVValue = value
+    if Settings.Misc.FOVEnabled then
+        workspace.CurrentCamera.FieldOfView = value
+    end
+end)
+
+CreateToggle(Pages.Misc, "Speed Hack", function(enabled)
+    Settings.Misc.SpeedHack = enabled
+end)
+
+CreateSlider(Pages.Misc, "Speed Multiplier", 1, 10, Settings.Misc.SpeedMultiplier, function(value)
+    Settings.Misc.SpeedMultiplier = value
+end)
+
+CreateToggle(Pages.Misc, "Infinite Jump", function(enabled)
+    Settings.Misc.InfiniteJump = enabled
+end)
+
+CreateToggle(Pages.Misc, "No Clip", function(enabled)
+    Settings.Misc.NoClip = enabled
+end)
+-- Feature Handlers
+RunService.RenderStepped:Connect(function()
+    -- FOV Circle Update
+    if Settings.Aimbot.ShowFOV then
+        FOVCircle.Position = UserInputService:GetMouseLocation()
+        FOVCircle.Radius = Settings.Aimbot.FOV
+        FOVCircle.Visible = true
+    else
+        FOVCircle.Visible = false
+    end
+
+    -- Speed Hack
+    if Settings.Misc.SpeedHack then
+        local character = Player.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.WalkSpeed = 16 * Settings.Misc.SpeedMultiplier
+        end
+    end
+
+    -- No Clip
+    if Settings.Misc.NoClip then
+        local character = Player.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+
+    -- Custom FOV
+    if Settings.Misc.FOVEnabled then
+        workspace.CurrentCamera.FieldOfView = Settings.Misc.FOVValue
+    end
+end)
+
+-- Infinite Jump Handler
+UserInputService.JumpRequest:Connect(function()
+    if Settings.Misc.InfiniteJump then
+        local character = Player.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+-- Menu Toggle Handler
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.KeyCode == Settings.UI.ToggleKey then
+            MainFrame.Visible = not MainFrame.Visible
+        elseif input.KeyCode == Enum.KeyCode.End or input.KeyCode == Enum.KeyCode.Delete then
+            DisableAllFeatures()
+        end
+    end
+end)
+
+-- Disable All Features Function
+function DisableAllFeatures()
+    -- Reset all settings
+    for _, category in pairs(Settings) do
+        if type(category) == "table" then
+            for key, value in pairs(category) do
+                if type(value) == "boolean" then
+                    category[key] = false
+                end
+            end
+        end
+    end
+
+    -- Reset FOV
+    workspace.CurrentCamera.FieldOfView = Settings.Misc.DefaultFOV
+
+    -- Reset character speed
+    local character = Player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.WalkSpeed = 16
+    end
+
+    -- Hide FOV Circle
+    FOVCircle.Visible = false
+
+    -- Remove GUI
+    ScreenGui:Destroy()
+end
+
+-- Initialize ESP for existing players
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= Player then
+        CreateESP(player)
+    end
+end
+
+-- Handle new players
+Players.PlayerAdded:Connect(function(player)
+    if player ~= Player then
+        CreateESP(player)
+    end
+end)
+
+-- Clean up when players leave
+Players.PlayerRemoving:Connect(function(player)
+    if Settings.ESP.Players[player] then
+        for _, drawing in pairs(Settings.ESP.Players[player]) do
+            drawing:Remove()
+        end
+        Settings.ESP.Players[player] = nil
+    end
+end)
+
+-- Show first page by default
+Pages.Combat.Visible = true
+TabButtons.Combat.BackgroundColor3 = Settings.UI.MenuColor
+
+return {
+    Settings = Settings,
+    ToggleMenu = function()
+        MainFrame.Visible = not MainFrame.Visible
+    end
+}
