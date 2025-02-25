@@ -1,11 +1,12 @@
-local SyferLib = {}
-
 -- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
+
+-- Initialize SyferLib
+local SyferLib = {}
 
 -- Settings
 SyferLib.Settings = {
@@ -55,89 +56,7 @@ SyferLib.Settings = {
     }
 }
 
--- Core UI Creation
-function SyferLib:CreateMainGUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "Syfer-eng's Menu"
-    ScreenGui.DisplayOrder = 999999
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-
-    pcall(function()
-        ScreenGui.Parent = CoreGui
-    end)
-
-    if not ScreenGui.Parent then
-        ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-    end
-
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 749, 0, 520)
-    MainFrame.Position = UDim2.new(0.5, -374, 0.5, -260)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-    MainFrame.Parent = ScreenGui
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = MainFrame
-
-    -- Create Title
-    local Title = Instance.new("TextLabel")
-    Title.Name = "Title"
-    Title.Size = UDim2.new(1, 0, 0, 40)
-    Title.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Title.Text = "•Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ•"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 22
-    Title.Font = Enum.Font.GothamBold
-    Title.Parent = MainFrame
-
-    local UIGradient = Instance.new("UIGradient")
-    UIGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
-    }
-    UIGradient.Parent = Title
-
-    -- Create Navigation Frame
-    local Navigation = Instance.new("Frame")
-    Navigation.Name = "Navigation"
-    Navigation.Size = UDim2.new(1, 0, 0, 40)
-    Navigation.Position = UDim2.new(0, 0, 0, 40)
-    Navigation.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Navigation.Parent = MainFrame
-
-    return ScreenGui, MainFrame, Navigation
-end
-
--- UI Elements Creation
-function SyferLib:CreatePage(name)
-    local Page = Instance.new("ScrollingFrame")
-    Page.Name = name
-    Page.Size = UDim2.new(1, -20, 1, -90)
-    Page.Position = UDim2.new(0, 10, 0, 80)
-    Page.BackgroundTransparency = 1
-    Page.BorderSizePixel = 0
-    Page.ScrollBarThickness = 4
-    Page.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
-    Page.ZIndex = 1000000
-
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = Page
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 5)
-
-    UIListLayout.Changed:Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
-    end)
-
-    return Page
-end
-
+-- UI Creation Functions
 function SyferLib:CreateButton(parent, text, callback)
     local Button = Instance.new("TextButton")
     Button.Name = text
@@ -286,165 +205,149 @@ function SyferLib:CreateSlider(parent, text, min, max, default, callback)
 
     return SliderFrame
 end
-
-function SyferLib:Initialize()
-    local ScreenGui, MainFrame, Navigation = self:CreateMainGUI()
-    
-    -- Create pages
-    local Pages = {
-        Main = self:CreatePage("Main"),
-        ESP = self:CreatePage("ESP"),
-        Aimbot = self:CreatePage("Aimbot"),
-        Combat = self:CreatePage("Combat"),
-        Visual = self:CreatePage("Visual"),
-        Misc = self:CreatePage("Misc"),
-        Settings = self:CreatePage("Settings")
-    }
-
-    -- Parent pages to MainFrame
-    for _, page in pairs(Pages) do
-        page.Parent = MainFrame
-    end
-
-    -- Create navigation buttons
-    local PageOrder = {"Main", "ESP", "Aimbot", "Combat", "Visual", "Misc", "Settings"}
-    local NavButtons = {}
-
-    for i, pageName in ipairs(PageOrder) do
-        local btn = self:CreateButton(Navigation, pageName, function()
-            for _, page in pairs(Pages) do
-                page.Visible = false
-            end
-            Pages[pageName].Visible = true
-
-            for _, button in pairs(NavButtons) do
-                button.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-            end
-            NavButtons[pageName].BackgroundColor3 = Color3.fromRGB(255, 0, 255)
-        end)
+    -- Create Main GUI
+    function SyferLib:CreateMainGUI()
+        local ScreenGui = Instance.new("ScreenGui")
+        ScreenGui.Name = "SyferMenu"
+        ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
         
-        btn.Size = UDim2.new(1/#PageOrder, -4, 1, -4)
-        btn.Position = UDim2.new((i-1)/#PageOrder, 2, 0, 2)
-        NavButtons[pageName] = btn
+        pcall(function()
+            ScreenGui.Parent = CoreGui
+        end)
+
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Name = "MainFrame"
+        MainFrame.Size = UDim2.new(0, 750, 0, 450)
+        MainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Active = true
+        MainFrame.Draggable = true
+        MainFrame.Parent = ScreenGui
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 10)
+        UICorner.Parent = MainFrame
+
+        -- Create Title
+        local Title = Instance.new("TextLabel")
+        Title.Name = "Title"
+        Title.Size = UDim2.new(1, 0, 0, 40)
+        Title.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        Title.Text = "•Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ•"
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.TextSize = 22
+        Title.Font = Enum.Font.GothamBold
+        Title.Parent = MainFrame
+
+        local UIGradient = Instance.new("UIGradient")
+        UIGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
+        }
+        UIGradient.Parent = Title
+
+        -- Create Navigation Frame
+        local Navigation = Instance.new("Frame")
+        Navigation.Name = "Navigation"
+        Navigation.Size = UDim2.new(1, 0, 0, 40)
+        Navigation.Position = UDim2.new(0, 0, 0, 40)
+        Navigation.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        Navigation.Parent = MainFrame
+
+        return ScreenGui, MainFrame, Navigation
     end
 
-    -- Set initial page
-    Pages.Main.Visible = true
-    NavButtons.Main.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+    -- Create Pages
+    function SyferLib:CreatePage(name)
+        local Page = Instance.new("ScrollingFrame")
+        Page.Name = name
+        Page.Size = UDim2.new(1, -20, 1, -90)
+        Page.Position = UDim2.new(0, 10, 0, 80)
+        Page.BackgroundTransparency = 1
+        Page.BorderSizePixel = 0
+        Page.ScrollBarThickness = 4
+        Page.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
+        Page.ZIndex = 1000000
 
-    -- Handle menu toggling
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == self.Settings.UI.ToggleKey then
-            MainFrame.Visible = not MainFrame.Visible
-        end
-    end)
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.Parent = Page
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.Padding = UDim.new(0, 5)
 
-    -- FOV Circle for Aimbot
-    local FOVCircle = Drawing.new("Circle")
-    FOVCircle.Thickness = 2
-    FOVCircle.NumSides = 100
-    FOVCircle.Radius = self.Settings.Aimbot.FOV
-    FOVCircle.Filled = false
-    FOVCircle.Visible = false
-    FOVCircle.ZIndex = 999
-    FOVCircle.Transparency = 1
-    FOVCircle.Color = Color3.fromRGB(255, 0, 255)
+        UIListLayout.Changed:Connect(function()
+            Page.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+        end)
 
-    -- Update loop
-    RunService.RenderStepped:Connect(function()
-        if self.Settings.Aimbot.ShowFOV then
-            FOVCircle.Position = UserInputService:GetMouseLocation()
-            FOVCircle.Radius = self.Settings.Aimbot.FOV
-            FOVCircle.Visible = true
-        else
-            FOVCircle.Visible = false
-        end
-
-        if self.Settings.ESP.Enabled then
-            self:UpdateESP()
-        end
-
-        if self.Settings.Aimbot.Enabled then
-            self:UpdateAimbot()
-        end
-    end)
-
-    -- Clean up on script end
-    ScreenGui.Destroying:Connect(function()
-        FOVCircle:Remove()
-        for _, esp in pairs(self.Settings.ESP.Players) do
-            esp:Remove()
-        end
-    end)
-
-    return {
-        ScreenGui = ScreenGui,
-        MainFrame = MainFrame,
-        Pages = Pages,
-        NavButtons = NavButtons,
-        Settings = self.Settings
-    }
-end
-
--- Helper Functions
-function SyferLib:GetClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    local mousePos = UserInputService:GetMouseLocation()
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if self.Settings.Aimbot.TeamCheck and player.Team == Players.LocalPlayer.Team then
-                continue
-            end
-
-            local pos = player.Character.HumanoidRootPart.Position
-            local screenPos, onScreen = workspace.CurrentCamera:WorldToScreenPoint(pos)
-            local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-
-            if onScreen and distance < shortestDistance and distance <= self.Settings.Aimbot.FOV then
-                closestPlayer = player
-                shortestDistance = distance
-            end
-        end
+        return Page
     end
 
-    return closestPlayer
-end
+    -- Initialize Menu
+    function SyferLib:Initialize()
+        local ScreenGui, MainFrame, Navigation = self:CreateMainGUI()
+        
+        -- Create pages
+        local Pages = {
+            Main = self:CreatePage("Main"),
+            ESP = self:CreatePage("ESP"),
+            Aimbot = self:CreatePage("Aimbot"),
+            Combat = self:CreatePage("Combat"),
+            Visual = self:CreatePage("Visual"),
+            Misc = self:CreatePage("Misc"),
+            Settings = self:CreatePage("Settings")
+        }
 
-function SyferLib:UpdateESP()
-    for player, esp in pairs(self.Settings.ESP.Players) do
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            -- Update ESP elements
-            local pos = player.Character.HumanoidRootPart.Position
-            local screenPos, onScreen = workspace.CurrentCamera:WorldToScreenPoint(pos)
+        -- Parent pages to MainFrame
+        for _, page in pairs(Pages) do
+            page.Parent = MainFrame
+            page.Visible = false
+        end
+        Pages.Main.Visible = true
+
+        -- Create navigation buttons
+        local PageOrder = {"Main", "ESP", "Aimbot", "Combat", "Visual", "Misc", "Settings"}
+        local NavButtons = {}
+
+        for i, pageName in ipairs(PageOrder) do
+            local btn = self:CreateButton(Navigation, pageName, function()
+                for _, page in pairs(Pages) do
+                    page.Visible = false
+                end
+                Pages[pageName].Visible = true
+
+                for _, button in pairs(NavButtons) do
+                    button.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+                end
+                NavButtons[pageName].BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+            end)
             
-            esp.Visible = onScreen
-            if onScreen then
-                -- Update ESP position and information
-                esp.Position = Vector2.new(screenPos.X, screenPos.Y)
-                esp.Text = string.format("%s\n%d studs", player.Name, (pos - Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-            end
-        else
-            esp.Visible = false
+            btn.Size = UDim2.new(1/#PageOrder, -4, 1, -4)
+            btn.Position = UDim2.new((i-1)/#PageOrder, 2, 0, 2)
+            NavButtons[pageName] = btn
         end
-    end
-end
 
-function SyferLib:UpdateAimbot()
-    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        local target = self:GetClosestPlayer()
-        if target then
-            local targetPart = target.Character:FindFirstChild(self.Settings.Aimbot.TargetPart)
-            if targetPart then
-                local pos = workspace.CurrentCamera:WorldToScreenPoint(targetPart.Position)
-                mousemoverel(
-                    (pos.X - UserInputService:GetMouseLocation().X) * self.Settings.Aimbot.Smoothness,
-                    (pos.Y - UserInputService:GetMouseLocation().Y) * self.Settings.Aimbot.Smoothness
-                )
+        -- Set initial active button
+        NavButtons.Main.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+
+        -- Create Features
+        self:CreateMainFeatures(Pages)
+        self:InitializeESP()
+        self:InitializeAimbot()
+
+        -- Handle menu toggle
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if not gameProcessed and input.KeyCode == self.Settings.UI.ToggleKey then
+                MainFrame.Visible = not MainFrame.Visible
             end
-        end
-    end
-end
+        end)
 
-return SyferLib
+        return {
+            ScreenGui = ScreenGui,
+            MainFrame = MainFrame,
+            Pages = Pages,
+            NavButtons = NavButtons
+        }
+    end
+
+    -- Return the library
+    return SyferLib
