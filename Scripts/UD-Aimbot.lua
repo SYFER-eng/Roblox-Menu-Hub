@@ -21,7 +21,7 @@ Settings = {
         Players = {},
         Tracers = {}
     },
-    Aimbot = {
+    Eam Helper = {
         Enabled = false,
         TeamCheck = false,
         Smoothness = 1,
@@ -306,7 +306,7 @@ end
 -- Create Pages
 local Pages = {
     Esq = CreatePage("Esq"),
-    Aimbot = CreatePage("Eam Helper"),
+    Eam Helper = CreatePage("Eam Helper"),
     Misc = CreatePage("Misc")
 }
 
@@ -338,18 +338,18 @@ local function GetClosestPlayer()
 
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer then
-            if Settings.Aimbot.TeamCheck and player.Team == Players.LocalPlayer.Team then
+            if Settings.Eam Helper.TeamCheck and player.Team == Players.LocalPlayer.Team then
                 continue
             end
 
             local character = player.Character
             if character then
-                local targetPart = character:FindFirstChild(Settings.Aimbot.TargetPart)
+                local targetPart = character:FindFirstChild(Settings.Eam Helper.TargetPart)
                 if targetPart then
                     local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
                     if onScreen then
                         local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                        if distance <= Settings.Aimbot.FOV then
+                        if distance <= Settings.Eam Helper.FOV then
                             if distance < shortestDistance then
                                 closestPlayer = player
                                 shortestDistance = distance
@@ -366,7 +366,7 @@ end
 -- Function to make the player's character face the target
 local function MakePlayerLookAtTarget(target)
     if target and target.Character then
-        local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
+        local targetPart = target.Character:FindFirstChild(Settings.Eam Helper.TargetPart)
         if targetPart then
             -- Get the target position and the player's humanoid root part position
             local targetPosition = targetPart.Position
@@ -403,7 +403,7 @@ end)
 
 -- Main loop to continuously aim and make your player look at the closest player when aiming
 RunService.RenderStepped:Connect(function()
-    if aiming and Settings.Aimbot.Enabled then
+    if aiming and Settings.Eam Helper.Enabled then
         local closestPlayer = GetClosestPlayer()
         if closestPlayer then
             MakePlayerLookAtTarget(closestPlayer)
@@ -551,25 +551,25 @@ local function InitializeUI()
     end)
 
     -- Aimbot Page
-    CreateToggle(Pages.Aimbot, "Enable Aimbot", function(enabled)
-        Settings.Aimbot.Enabled = enabled
+    CreateToggle(Pages.Eam Helper, "Enable Eam Helper", function(enabled)
+        Settings.Eam Helper.Enabled = enabled
     end)
 
-    CreateToggle(Pages.Aimbot, "Show FOV", function(enabled)
-        Settings.Aimbot.ShowFOV = enabled
+    CreateToggle(Pages.Eam Helper, "Show FOV", function(enabled)
+        Settings.Eam Helper.ShowFOV = enabled
         FOVCircle.Visible = enabled
     end)
 
-    CreateToggle(Pages.Aimbot, "Team Check", function(enabled)
-        Settings.Aimbot.TeamCheck = enabled
+    CreateToggle(Pages.Eam Helper, "Team Check", function(enabled)
+        Settings.Eam Helper.TeamCheck = enabled
     end)
 
-    CreateSlider(Pages.Aimbot, "Smoothness", 1, 10, 1, function(value)
-        Settings.Aimbot.Smoothness = value
+    CreateSlider(Pages.Eam Helper, "Smoothness", 1, 10, 1, function(value)
+        Settings.Eam Helper.Smoothness = value
     end)
 
-    CreateSlider(Pages.Aimbot, "FOV Size", 10, 800, 100, function(value)
-        Settings.Aimbot.FOV = value
+    CreateSlider(Pages.Eam Helper, "FOV Size", 10, 800, 100, function(value)
+        Settings.Eam Helper.FOV = value
         FOVCircle.Radius = value
     end)
 
@@ -612,13 +612,13 @@ end)
 -- Main Update Loop
 RunService.RenderStepped:Connect(function()
     UpdateEsq() -- Make sure this is called every frame
-    if Settings.Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+    if Settings.Eam Helper.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         local target = GetClosestPlayer()
         if target and target.Character then
-            local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
+            local targetPart = target.Character:FindFirstChild(Settings.Eam Helper.TargetPart)
             if targetPart then
                 local targetPos = targetPart.Position
-                local smoothness = Settings.Aimbot.Smoothness
+                local smoothness = Settings.Eam Helper.Smoothness
                 
                 local currentCFrame = workspace.CurrentCamera.CFrame
                 local targetCFrame = CFrame.new(currentCFrame.Position, targetPos)
@@ -633,10 +633,10 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    if Settings.Aimbot.ShowFOV then
+    if Settings.Eam Helper.ShowFOV then
         UpdateEsq()
         FOVCircle.Position = UserInputService:GetMouseLocation()
-        FOVCircle.Radius = Settings.Aimbot.FOV
+        FOVCircle.Radius = Settings.Eam Helper.FOV
         FOVCircle.Visible = true
     else
         FOVCircle.Visible = false
@@ -654,9 +654,9 @@ local function DisableAllFeatures()
     Settings.Esq.Rainbow = false
     
     -- Aimbot Settings
-    Settings.Aimbot.Enabled = false
-    Settings.Aimbot.TeamCheck = false
-    Settings.Aimbot.ShowFOV = false
+    Settings.Eam Helper.Enabled = false
+    Settings.Eam Helper.TeamCheck = false
+    Settings.Eam Helper.ShowFOV = false
     FOVCircle.Visible = false
     
     -- Misc Settings
