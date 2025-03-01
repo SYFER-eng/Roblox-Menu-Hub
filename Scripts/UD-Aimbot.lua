@@ -8,7 +8,7 @@ local CoreGui = game:GetService("CoreGui")
 
 -- Settings
 Settings = {
-    ESP = {
+    Esq = {
         Enabled = false,
         Boxes = false,
         Names = false,
@@ -305,14 +305,14 @@ local function CreateSlider(parent, name, min, max, default, callback)
 end
 -- Create Pages
 local Pages = {
-    ESP = CreatePage("Vîsual"),
-    Aimbot = CreatePage("Advanced Aim Training"),
+    Esq = CreatePage("Esq"),
+    Aimbot = CreatePage("Eam Helper"),
     Misc = CreatePage("Misc")
 }
 
 -- Setup Navigation
 local NavButtons = {}
-local PageOrder = {"Vîsual", "Advanced Aim Training", "Misc"}
+local PageOrder = {"Esq", "Eam Helper", "Misc"}
 
 for i, pageName in ipairs(PageOrder) do
     local btn = CreateNavButton(pageName, UDim2.new((i-1) * 0.33, 2, 0, 2))
@@ -419,110 +419,110 @@ local function CreateSnapline(player)
     Line.Transparency = 1
     Line.Visible = false
     Line.ZIndex = 999998
-    Settings.ESP.Tracers[player] = Line
+    Settings.Esq.Tracers[player] = Line
 end
 
 -- ESP Implementation
-local function CreateESP(player)
-    local esp = {
+local function CreateEsq(player)
+    local Esq = {
         Box = Drawing.new("Square"),
         Name = Drawing.new("Text"),
         Distance = Drawing.new("Text"),
         Snapline = Drawing.new("Line")
     }
 
-    esp.Box.Visible = false
-    esp.Box.Color = Settings.ESP.BoxColor
-    esp.Box.Thickness = 2
-    esp.Box.Filled = false
-    esp.Box.Transparency = 1
+    Esq.Box.Visible = false
+    Esq.Box.Color = Settings.Esq.BoxColor
+    Esq.Box.Thickness = 2
+    Esq.Box.Filled = false
+    Esq.Box.Transparency = 1
 
-    esp.Name.Visible = false
-    esp.Name.Color = Color3.new(1, 1, 1)
-    esp.Name.Size = 14
-    esp.Name.Center = true
-    esp.Name.Outline = true
+    Esq.Name.Visible = false
+    Esq.Name.Color = Color3.new(1, 1, 1)
+    Esq.Name.Size = 14
+    Esq.Name.Center = true
+    Esq.Name.Outline = true
 
-    esp.Distance.Visible = false
-    esp.Distance.Color = Color3.new(1, 1, 1)
-    esp.Distance.Size = 12
-    esp.Distance.Center = true
-    esp.Distance.Outline = true
+    Esq.Distance.Visible = false
+    Esq.Distance.Color = Color3.new(1, 1, 1)
+    Esq.Distance.Size = 12
+    Esq.Distance.Center = true
+    Esq.Distance.Outline = true
 
-    esp.Snapline.Visible = false
-    esp.Snapline.Color = Settings.ESP.BoxColor
-    esp.Snapline.Thickness = 1
-    esp.Snapline.Transparency = 1
+    Esq.Snapline.Visible = false
+    Esq.Snapline.Color = Settings.Esq.BoxColor
+    Esq.Snapline.Thickness = 1
+    Esq.Snapline.Transparency = 1
 
-    Settings.ESP.Players[player] = esp
+    Settings.Esq.Players[player] = Esq
 end
 
-local function UpdateESP()
-    for player, esp in pairs(Settings.ESP.Players) do
+local function UpdateEsq()
+    for player, Esq in pairs(Settings.Esq.Players) do
         if player.Character and player ~= Players.LocalPlayer and player.Character:FindFirstChild("HumanoidRootPart") then
             local humanoidRootPart = player.Character.HumanoidRootPart
             local head = player.Character:FindFirstChild("Head")
             local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position)
             
-            if onScreen and Settings.ESP.Enabled then
-                if Settings.ESP.TeamCheck and player.Team == Players.LocalPlayer.Team then
-                    esp.Box.Visible = false
-                    esp.Name.Visible = false
-                    esp.Distance.Visible = false
-                    esp.Snapline.Visible = false
+            if onScreen and Settings.Esq.Enabled then
+                if Settings.Esq.TeamCheck and player.Team == Players.LocalPlayer.Team then
+                    Esq.Box.Visible = false
+                    Esq.Name.Visible = false
+                    Esq.Distance.Visible = false
+                    Esq.Snapline.Visible = false
                     continue
                 end
 
                 -- Update Box ESP
-                if Settings.ESP.Boxes then
+                if Settings.Esq.Boxes then
                     local size = (workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(3, 6, 0)).Y - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-3, -3, 0)).Y) / 2
-                    esp.Box.Size = Vector2.new(size * 0.7, size * 1)
-                    esp.Box.Position = Vector2.new(screenPos.X - esp.Box.Size.X / 2, screenPos.Y - esp.Box.Size.Y / 2)
-                    esp.Box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
-                    esp.Box.Visible = true
+                    Esq.Box.Size = Vector2.new(size * 0.7, size * 1)
+                    Esq.Box.Position = Vector2.new(screenPos.X - Esq.Box.Size.X / 2, screenPos.Y - Esq.Box.Size.Y / 2)
+                    Esq.Box.Color = Settings.Esq.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.Esq.BoxColor
+                    Esq.Box.Visible = true
                 else
-                    esp.Box.Visible = false
+                    Esq.Box.Visible = false
                 end
 
                 -- Update Snaplines
-                if Settings.ESP.Snaplines then
-                    esp.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-                    esp.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
-                    esp.Snapline.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
-                    esp.Snapline.Visible = true
+                if Settings.Esq.Snaplines then
+                    Esq.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+                    Esq.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
+                    Esq.Snapline.Color = Settings.Esq.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.Esq.BoxColor
+                    Esq.Snapline.Visible = true
                 else
-                    esp.Snapline.Visible = false
+                    Esq.Snapline.Visible = false
                 end
 
                 -- Update Names
-                if Settings.ESP.Names and head then
-                    esp.Name.Position = Vector2.new(screenPos.X, screenPos.Y - esp.Box.Size.Y / 2 - 15)
-                    esp.Name.Text = player.Name
-                    esp.Name.Visible = true
+                if Settings.Esq.Names and head then
+                    Esq.Name.Position = Vector2.new(screenPos.X, screenPos.Y - Esq.Box.Size.Y / 2 - 15)
+                    Esq.Name.Text = player.Name
+                    Esq.Name.Visible = true
                 else
-                    esp.Name.Visible = false
+                    Esq.Name.Visible = false
                 end
 
                 -- Update Distance
-                if Settings.ESP.Distance then
+                if Settings.Esq.Distance then
                     local distance = math.floor((humanoidRootPart.Position - workspace.CurrentCamera.CFrame.Position).Magnitude)
-                    esp.Distance.Position = Vector2.new(screenPos.X, screenPos.Y + esp.Box.Size.Y / 2 + 5)
-                    esp.Distance.Text = tostring(distance) .. " studs"
-                    esp.Distance.Visible = true
+                    Esq.Distance.Position = Vector2.new(screenPos.X, screenPos.Y + Esq.Box.Size.Y / 2 + 5)
+                    Esq.Distance.Text = tostring(distance) .. " studs"
+                    Esq.Distance.Visible = true
                 else
-                    esp.Distance.Visible = false
+                    Esq.Distance.Visible = false
                 end
             else
-                esp.Box.Visible = false
-                esp.Name.Visible = false
-                esp.Distance.Visible = false
-                esp.Snapline.Visible = false
+                Esq.Box.Visible = false
+                Esq.Name.Visible = false
+                Esq.Distance.Visible = false
+                Esq.Snapline.Visible = false
             end
         else
-            esp.Box.Visible = false
-            esp.Name.Visible = false
-            esp.Distance.Visible = false
-            esp.Snapline.Visible = false
+            Esq.Box.Visible = false
+            Esq.Name.Visible = false
+            Esq.Distance.Visible = false
+            Esq.Snapline.Visible = false
         end
     end
 end
@@ -530,28 +530,28 @@ end
 -- Initialize UI Elements
 local function InitializeUI()
     -- ESP Page
-    CreateToggle(Pages.ESP, "Enable Vîsual", function(enabled)
-        Settings.ESP.Enabled = enabled
+    CreateToggle(Pages.Esq, "Enable Esq", function(enabled)
+        Settings.Esq.Enabled = enabled
     end)
     
-    CreateToggle(Pages.ESP, "Box Vîsual", function(enabled)
-        Settings.ESP.Boxes = enabled
+    CreateToggle(Pages.Esq, "Box Esq", function(enabled)
+        Settings.Esq.Boxes = enabled
     end)
     
-    CreateToggle(Pages.ESP, "Snaplines", function(enabled)
-        Settings.ESP.Snaplines = enabled
+    CreateToggle(Pages.Esq, "Snaplines", function(enabled)
+        Settings.Esq.Snaplines = enabled
     end)
     
-    CreateToggle(Pages.ESP, "Team Check", function(enabled)
-        Settings.ESP.TeamCheck = enabled
+    CreateToggle(Pages.Esq, "Team Check", function(enabled)
+        Settings.Esq.TeamCheck = enabled
     end)
     
-    CreateToggle(Pages.ESP, "Rainbow Mode", function(enabled)
-        Settings.ESP.Rainbow = enabled
+    CreateToggle(Pages.Esq, "Rainbow Mode", function(enabled)
+        Settings.Esq.Rainbow = enabled
     end)
 
     -- Aimbot Page
-    CreateToggle(Pages.Aimbot, "Enable Advanced Aim Training", function(enabled)
+    CreateToggle(Pages.Aimbot, "Enable Aimbot", function(enabled)
         Settings.Aimbot.Enabled = enabled
     end)
 
@@ -586,32 +586,32 @@ end
 -- Initialize ESP for existing players
 for _, player in pairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
-        CreateESP(player)
+        CreateEsq(player)
     end
 end
 
 -- Handle new players
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
-        CreateESP(player)
+        CreateEsq(player)
     end
 end)
 
 -- Cleanup when players leave
 Players.PlayerRemoving:Connect(function(player)
-    if Settings.ESP.Players[player] then
-        Settings.ESP.Players[player]:Remove()
-        Settings.ESP.Players[player] = nil
+    if Settings.Esq.Players[player] then
+        Settings.Esq.Players[player]:Remove()
+        Settings.Esq.Players[player] = nil
     end
-    if Settings.ESP.Tracers[player] then
-        Settings.ESP.Tracers[player]:Remove()
-        Settings.ESP.Tracers[player] = nil
+    if Settings.Esq.Tracers[player] then
+        Settings.Esq.Tracers[player]:Remove()
+        Settings.Esq.Tracers[player] = nil
     end
 end)
 
 -- Main Update Loop
 RunService.RenderStepped:Connect(function()
-    UpdateESP() -- Make sure this is called every frame
+    UpdateEsq() -- Make sure this is called every frame
     if Settings.Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         local target = GetClosestPlayer()
         if target and target.Character then
@@ -634,7 +634,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     if Settings.Aimbot.ShowFOV then
-        UpdateESP()
+        UpdateEsq()
         FOVCircle.Position = UserInputService:GetMouseLocation()
         FOVCircle.Radius = Settings.Aimbot.FOV
         FOVCircle.Visible = true
@@ -645,13 +645,13 @@ end)
 
 local function DisableAllFeatures()
     -- ESP Settings
-    Settings.ESP.Enabled = false
-    Settings.ESP.Boxes = false
-    Settings.ESP.Names = false
-    Settings.ESP.Distance = false
-    Settings.ESP.Snaplines = false
-    Settings.ESP.TeamCheck = false
-    Settings.ESP.Rainbow = false
+    Settings.Esq.Enabled = false
+    Settings.Esq.Boxes = false
+    Settings.Esq.Names = false
+    Settings.Esq.Distance = false
+    Settings.Esq.Snaplines = false
+    Settings.Esq.TeamCheck = false
+    Settings.Esq.Rainbow = false
     
     -- Aimbot Settings
     Settings.Aimbot.Enabled = false
@@ -664,11 +664,11 @@ local function DisableAllFeatures()
     Settings.Misc.BunnyHop = false
     
     -- Clean up ESP drawings
-    for _, esp in pairs(Settings.ESP.Players) do
-        esp.Box.Visible = false
-        esp.Name.Visible = false
-        esp.Distance.Visible = false
-        esp.Snapline.Visible = false
+    for _, Esq in pairs(Settings.Esq.Players) do
+        Esq.Box.Visible = false
+        Esq.Name.Visible = false
+        Esq.Distance.Visible = false
+        Esq.Snapline.Visible = false
     end
     
     -- Remove the GUI
@@ -683,14 +683,15 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if input.KeyCode == Enum.KeyCode.End or input.KeyCode == Enum.KeyCode.Delete then
             DisableAllFeatures()
         end
-send)
+    end
+end)
 
 -- Initialize the UI
 InitializeUI()
 
 -- Show first page by default
-Pages.ESP.Visible = true
-NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+Pages.Esq.Visible = true
+NavButtons.Esq.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
 
 -- Toggle GUI visibility
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
