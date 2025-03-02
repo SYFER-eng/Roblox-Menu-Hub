@@ -113,10 +113,10 @@ local function CreateScriptButton(name, scriptUrl)
     end)
 end
 
-CreateScriptButton("✧ Aim Menu", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/AimMenu.lua")
-CreateScriptButton("✧ Speed Hacks", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Roblox-Speed-Hack.lua")
-CreateScriptButton("✧ Fly Hack", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Fly-Hack.lua")
-CreateScriptButton("✧ Teloport Hack", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Tp-To-A-Player.lua")
+CreateScriptButton("✧ Ạı̇ṃbọṭ", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/AimMenu.lua")
+CreateScriptButton("✧ Ṣрẹẹḍ", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Roblox-Speed-Hack.lua")
+CreateScriptButton("✧ Fḷỵ", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Fly-Hack.lua")
+CreateScriptButton("✧ Ṭẹḷọрọṛṭ", "https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Scripts/Tp-To-A-Player.lua")
 
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
