@@ -4,7 +4,7 @@ local blocks = {}
 
 local hoverDistance = 10 -- Radius of the base of the witch's hat
 local hoverHeight = 5 -- Height of the witch's hat
-local blockCount = 5000000000 -- Number of blocks to form the witch's hat
+local blockCount = 500000000000000 -- Number of blocks to form the witch's hat
 local blockSize = Vector3.new(2, 1, 2) -- Size of each block
 local hoverSpeed = 1 -- Speed of hovering (rotate speed)
 
@@ -102,8 +102,8 @@ local userInputService = game:GetService("UserInputService")
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end  -- Ignore if the game already processed the input
 
-    -- Spawn blocks in a witch's hat shape when "]" key is pressed
-    if input.KeyCode == Enum.KeyCode.RightBracket then
+    -- Spawn blocks in a witch's hat shape when "C" key is pressed
+    if input.KeyCode == Enum.KeyCode.C then
         placeWitchesHat()
     end
 end)
