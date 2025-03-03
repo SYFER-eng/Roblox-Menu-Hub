@@ -43,6 +43,7 @@ FOVCircle.Visible = false
 FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 1
 FOVCircle.Color = Color3.fromRGB(255, 0, 255)
+
 -- Navigation Setup
 local Navigation = Instance.new("Frame")
 Navigation.Size = UDim2.new(1, 0, 0, 50)
@@ -51,7 +52,7 @@ Navigation.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Navigation.ZIndex = 999999
 Navigation.Parent = MainFrame
 
-
+-- Function to get the closest player
 local function GetClosestPlayer()
     local closestPlayer = nil
     local shortestDistance = math.huge
@@ -89,20 +90,13 @@ local function MakePlayerLookAtTarget(target)
     if target and target.Character then
         local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
         if targetPart then
-            -- Get the target position and the player's humanoid root part position
             local targetPosition = targetPart.Position
             local playerCharacter = Players.LocalPlayer.Character
             local playerHumanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
             
-            -- Ensure the player character exists and the humanoid root part is found
             if playerHumanoidRootPart then
-                -- Calculate the direction vector to the target
                 local direction = (targetPosition - playerHumanoidRootPart.Position).unit
-                
-                -- Create a new CFrame to make the character rotate toward the target
                 local newCFrame = CFrame.lookAt(playerHumanoidRootPart.Position, targetPosition)
-                
-                -- Update the character's HumanoidRootPart to look at the target
                 playerHumanoidRootPart.CFrame = newCFrame
             end
         end
@@ -110,6 +104,7 @@ local function MakePlayerLookAtTarget(target)
 end
 
 -- Function to detect right mouse button press and hold
+local aiming = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton2 then
         aiming = true
@@ -135,8 +130,8 @@ end)
 -- ESP Implementation
 local function CreateSnapline(player)
     local Line = Drawing.new("Line")
-    Line.Thickness = 2 -- Increased thickness for glow effect
-    Line.Color = Color3.fromRGB(255, 0, 255) -- Default color before rainbow toggle
+    Line.Thickness = 2
+    Line.Color = Color3.fromRGB(255, 0, 255)
     Line.Transparency = 1
     Line.Visible = false
     Line.ZIndex = 999998
@@ -178,6 +173,7 @@ local function CreateESP(player)
     Settings.ESP.Players[player] = esp
 end
 
+-- Update ESP
 local function UpdateESP()
     for player, esp in pairs(Settings.ESP.Players) do
         if player.Character and player ~= Players.LocalPlayer and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -247,6 +243,42 @@ local function UpdateESP()
         end
     end
 end
+
+-- Key press detection and toggling
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        -- Toggle ESP Enabled when ] is pressed
+        if input.KeyCode == Enum.KeyCode.RightBracket then
+            Settings.ESP.Enabled = not Settings.ESP.Enabled
+            -- Update the visibility of ESP elements based on the toggle
+            if Settings.ESP.Enabled then
+                UpdateESP()
+            else
+                for _, esp in pairs(Settings.ESP.Players) do
+                    esp.Box.Visible = false
+                    esp.Name.Visible = false
+                    esp.Distance.Visible = false
+                    esp.Snapline.Visible = false
+                end
+            end
+        end
+
+        -- Toggle Aimbot Enabled when [ is pressed
+        if input.KeyCode == Enum.KeyCode.LeftBracket then
+            Settings.Aimbot.Enabled = not Settings.Aimbot.Enabled
+        end
+
+        -- Toggle Aimbot TeamCheck when ; is pressed
+        if input.KeyCode == Enum.KeyCode.Semicolon then
+            Settings.Aimbot.TeamCheck = not Settings.Aimbot.TeamCheck
+        end
+
+        -- Toggle ESP TeamCheck when ' is pressed
+        if input.KeyCode == Enum.KeyCode.Quote then
+            Settings.ESP.TeamCheck = not Settings.ESP.TeamCheck
+        end
+    end
+end)
 
 -- Initialize UI Elements
 local function InitializeUI()
@@ -348,75 +380,16 @@ RunService.RenderStepped:Connect(function()
                     workspace.CurrentCamera.CFrame = currentCFrame:Lerp(targetCFrame, 1 / smoothness)
                 else
                     workspace.CurrentCamera.CFrame = targetCFrame
-                    
                 end
             end
         end
     end
 
     if Settings.Aimbot.ShowFOV then
-        UpdateESP()
         FOVCircle.Position = UserInputService:GetMouseLocation()
         FOVCircle.Radius = Settings.Aimbot.FOV
         FOVCircle.Visible = true
     else
         FOVCircle.Visible = false
-    end
-end)
-
-local function DisableAllFeatures()
-    -- ESP Settings
-    Settings.ESP.Enabled = false
-    Settings.ESP.Boxes = false
-    Settings.ESP.Names = false
-    Settings.ESP.Distance = false
-    Settings.ESP.Snaplines = false
-    Settings.ESP.TeamCheck = false
-    Settings.ESP.Rainbow = false
-    
-    -- Aimbot Settings
-    Settings.Aimbot.Enabled = false
-    Settings.Aimbot.TeamCheck = false
-    Settings.Aimbot.ShowFOV = false
-    FOVCircle.Visible = false
-    
-    -- Misc Settings
-    Settings.Misc.NoRecoil = false
-    Settings.Misc.BunnyHop = false
-    
-    -- Clean up ESP drawings
-    for _, esp in pairs(Settings.ESP.Players) do
-        esp.Box.Visible = false
-        esp.Name.Visible = false
-        esp.Distance.Visible = false
-        esp.Snapline.Visible = false
-    end
-    
-    -- Remove the GUI
-    if ScreenGui then
-        ScreenGui:Destroy()
-    end
-end
-
--- Add key detection for End and Delete keys
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed then
-        if input.KeyCode == Enum.KeyCode.End or input.KeyCode == Enum.KeyCode.Delete then
-            DisableAllFeatures()
-        end
-    end
-end)
-
--- Initialize the UI
-InitializeUI()
-
--- Show first page by default
-Pages.ESP.Visible = true
-NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
-
--- Toggle GUI visibility
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
     end
 end)
