@@ -1,7 +1,7 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Knite_menu.lua/refs/heads/main/Cornerbox.lua",true))()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Knite_menu.lua/refs/heads/main/Cornerbox.lua",true))()
 
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
