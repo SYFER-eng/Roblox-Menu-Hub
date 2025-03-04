@@ -26,13 +26,8 @@ Settings = {
         FOV = 100,
         TargetPart = "Head",
         ShowFOV = true
-    },
-    Misc = {
-        NoRecoil = false,
-        BunnyHop = false
     }
-}
-
+    
 -- FOV Circle Setup
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 2
