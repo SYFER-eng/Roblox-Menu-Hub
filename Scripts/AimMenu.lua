@@ -36,7 +36,7 @@ Settings = {
 
 -- Create Main GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Syfer-eng's Menu"
+ScreenGui.Name = "❤ Syfer-eng's Menu ❤"
 ScreenGui.DisplayOrder = 999999
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
@@ -51,8 +51,8 @@ end
 -- Main Frame Setup
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 669, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -334, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 800, 0, 600) -- Increased width to 800 from 669
+MainFrame.Position = UDim2.new(0.5, -400, 0.5, -300) -- Adjusted X position to center the wider menu
 MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -114,7 +114,7 @@ Title.Name = "MenuTitle"
 Title.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "•Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ•"
+Title.Text = "• Ｓｙｆｅｒ－ｅｎｇ＇ｓ Ｍｅｎｕ •"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 22
 Title.ZIndex = 999999
@@ -191,12 +191,40 @@ end
 
 -- Create Toggle Function
 local function CreateToggle(parent, name, callback)
+    -- Outer Glow Frame
+    local GlowFrame = Instance.new("Frame")
+    GlowFrame.Size = UDim2.new(0.92, 0, 0, 44)
+    GlowFrame.Position = UDim2.new(0.04, 0, 0, -2)
+    GlowFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+    GlowFrame.ZIndex = 999998
+    GlowFrame.Parent = parent
+
+    -- Glow Gradient
+    local UIGradient_Glow = Instance.new("UIGradient")
+    UIGradient_Glow.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+    }
+    UIGradient_Glow.Rotation = 45
+    UIGradient_Glow.Parent = GlowFrame
+
+    -- Add glow effect
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(255, 0, 255)
+    UIStroke.Thickness = 2
+    UIStroke.Parent = GlowFrame
+
+    local UICorner_Glow = Instance.new("UICorner")
+    UICorner_Glow.CornerRadius = UDim.new(0, 6)
+    UICorner_Glow.Parent = GlowFrame
+
     local Toggle = Instance.new("Frame")
-    Toggle.Size = UDim2.new(0.9, 0, 0, 40)
-    Toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Toggle.Position = UDim2.new(0.05, 0, 0, 0)
+    Toggle.Size = UDim2.new(1, -2, 1, -2)
+    Toggle.Position = UDim2.new(0, 1, 0, 1)
+    Toggle.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
     Toggle.ZIndex = 999999
-    Toggle.Parent = parent
+    Toggle.Parent = GlowFrame
 
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 6)
@@ -212,6 +240,17 @@ local function CreateToggle(parent, name, callback)
     Button.ZIndex = 999999
     Button.Parent = Toggle
 
+    -- Hover Effect
+    Button.MouseEnter:Connect(function()
+        Toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+        UIGradient_Glow.Rotation = UIGradient_Glow.Rotation + 45
+    end)
+
+    Button.MouseLeave:Connect(function()
+        Toggle.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        UIGradient_Glow.Rotation = UIGradient_Glow.Rotation - 45
+    end)
+
     local Status = Instance.new("Frame")
     Status.Size = UDim2.new(0, 10, 0, 10)
     Status.Position = UDim2.new(0.95, -5, 0.5, -5)
@@ -222,6 +261,14 @@ local function CreateToggle(parent, name, callback)
     local UICorner_Status = Instance.new("UICorner")
     UICorner_Status.CornerRadius = UDim.new(1, 0)
     UICorner_Status.Parent = Status
+
+    -- Animate gradient
+    spawn(function()
+        while true do
+            UIGradient_Glow.Rotation = UIGradient_Glow.Rotation + 1
+            wait(0.1)
+        end
+    end)
 
     local enabled = false
     Button.MouseButton1Click:Connect(function()
@@ -624,5 +671,25 @@ Watermark.TextColor3 = Color3.fromRGB(255, 0, 255)
 Watermark.Font = Enum.Font.GothamBold
 Watermark.TextSize = 16
 Watermark.Parent = MainFrame
+
+-- Create Footer Text
+local Footer = Instance.new("TextLabel")
+Footer.Text = "Press End Or Delete To Close"
+Footer.Size = UDim2.new(1, 0, 0, 20)
+Footer.Position = UDim2.new(0, 0, 1, -45) -- Positioned above the watermark
+Footer.BackgroundTransparency = 1
+Footer.TextColor3 = Color3.fromRGB(255, 0, 255)
+Footer.Font = Enum.Font.GothamBold
+Footer.TextSize = 14
+Footer.Parent = MainFrame
+
+-- Add a cool gradient to the text
+local UIGradient_Footer = Instance.new("UIGradient")
+UIGradient_Footer.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 0, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+}
+UIGradient_Footer.Parent = Footer
 
 print("Syfer-eng's Menu Loaded Successfully!")
