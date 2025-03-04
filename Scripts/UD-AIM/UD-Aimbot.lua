@@ -44,26 +44,18 @@ FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 1
 FOVCircle.Color = Color3.fromRGB(255, 0, 255)
 
--- Navigation Setup
-local Navigation = Instance.new("Frame")
-Navigation.Size = UDim2.new(1, 0, 0, 50)
-Navigation.Position = UDim2.new(0, 0, 0, 40)
-Navigation.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Navigation.ZIndex = 999999
-Navigation.Parent = MainFrame
-
 -- Function to get the closest player
 local function GetClosestPlayer()
     local closestPlayer = nil
     local shortestDistance = math.huge
     local mousePos = UserInputService:GetMouseLocation()
-
+    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer then
             if Settings.Aimbot.TeamCheck and player.Team == Players.LocalPlayer.Team then
                 continue
             end
-
+            
             local character = player.Character
             if character then
                 local targetPart = character:FindFirstChild(Settings.Aimbot.TargetPart)
@@ -85,59 +77,6 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
--- Function to make the player's character face the target
-local function MakePlayerLookAtTarget(target)
-    if target and target.Character then
-        local targetPart = target.Character:FindFirstChild(Settings.Aimbot.TargetPart)
-        if targetPart then
-            local targetPosition = targetPart.Position
-            local playerCharacter = Players.LocalPlayer.Character
-            local playerHumanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
-            
-            if playerHumanoidRootPart then
-                local direction = (targetPosition - playerHumanoidRootPart.Position).unit
-                local newCFrame = CFrame.lookAt(playerHumanoidRootPart.Position, targetPosition)
-                playerHumanoidRootPart.CFrame = newCFrame
-            end
-        end
-    end
-end
-
--- Function to detect right mouse button press and hold
-local aiming = false
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aiming = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aiming = false
-    end
-end)
-
--- Main loop to continuously aim and make your player look at the closest player when aiming
-RunService.RenderStepped:Connect(function()
-    if aiming and Settings.Aimbot.Enabled then
-        local closestPlayer = GetClosestPlayer()
-        if closestPlayer then
-            MakePlayerLookAtTarget(closestPlayer)
-        end
-    end
-end)
-
--- ESP Implementation
-local function CreateSnapline(player)
-    local Line = Drawing.new("Line")
-    Line.Thickness = 2
-    Line.Color = Color3.fromRGB(255, 0, 255)
-    Line.Transparency = 1
-    Line.Visible = false
-    Line.ZIndex = 999998
-    Settings.ESP.Tracers[player] = Line
-end
-
 -- ESP Implementation
 local function CreateESP(player)
     local esp = {
@@ -146,30 +85,30 @@ local function CreateESP(player)
         Distance = Drawing.new("Text"),
         Snapline = Drawing.new("Line")
     }
-
+    
     esp.Box.Visible = false
     esp.Box.Color = Settings.ESP.BoxColor
     esp.Box.Thickness = 2
     esp.Box.Filled = false
     esp.Box.Transparency = 1
-
+    
     esp.Name.Visible = false
     esp.Name.Color = Color3.new(1, 1, 1)
     esp.Name.Size = 14
     esp.Name.Center = true
     esp.Name.Outline = true
-
+    
     esp.Distance.Visible = false
     esp.Distance.Color = Color3.new(1, 1, 1)
     esp.Distance.Size = 12
     esp.Distance.Center = true
     esp.Distance.Outline = true
-
+    
     esp.Snapline.Visible = false
     esp.Snapline.Color = Settings.ESP.BoxColor
     esp.Snapline.Thickness = 1
     esp.Snapline.Transparency = 1
-
+    
     Settings.ESP.Players[player] = esp
 end
 
@@ -189,8 +128,8 @@ local function UpdateESP()
                     esp.Snapline.Visible = false
                     continue
                 end
-
-                -- Update Box ESP
+                
+                -- Box ESP
                 if Settings.ESP.Boxes then
                     local size = (workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(3, 6, 0)).Y - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-3, -3, 0)).Y) / 2
                     esp.Box.Size = Vector2.new(size * 0.7, size * 1)
@@ -200,8 +139,8 @@ local function UpdateESP()
                 else
                     esp.Box.Visible = false
                 end
-
-                -- Update Snaplines
+                
+                -- Snaplines
                 if Settings.ESP.Snaplines then
                     esp.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
                     esp.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
@@ -210,8 +149,8 @@ local function UpdateESP()
                 else
                     esp.Snapline.Visible = false
                 end
-
-                -- Update Names
+                
+                -- Names
                 if Settings.ESP.Names and head then
                     esp.Name.Position = Vector2.new(screenPos.X, screenPos.Y - esp.Box.Size.Y / 2 - 15)
                     esp.Name.Text = player.Name
@@ -219,8 +158,8 @@ local function UpdateESP()
                 else
                     esp.Name.Visible = false
                 end
-
-                -- Update Distance
+                
+                -- Distance
                 if Settings.ESP.Distance then
                     local distance = math.floor((humanoidRootPart.Position - workspace.CurrentCamera.CFrame.Position).Magnitude)
                     esp.Distance.Position = Vector2.new(screenPos.X, screenPos.Y + esp.Box.Size.Y / 2 + 5)
@@ -244,16 +183,13 @@ local function UpdateESP()
     end
 end
 
--- Key press detection and toggling
+-- Numpad Controls
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed then
-        -- Toggle ESP Enabled when ] is pressed
-        if input.KeyCode == Enum.KeyCode.RightBracket then
+        -- Numpad 1: Toggle ESP
+        if input.KeyCode == Enum.KeyCode.KeypadOne then
             Settings.ESP.Enabled = not Settings.ESP.Enabled
-            -- Update the visibility of ESP elements based on the toggle
-            if Settings.ESP.Enabled then
-                UpdateESP()
-            else
+            if not Settings.ESP.Enabled then
                 for _, esp in pairs(Settings.ESP.Players) do
                     esp.Box.Visible = false
                     esp.Name.Visible = false
@@ -263,78 +199,49 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             end
         end
 
-        -- Toggle Aimbot Enabled when [ is pressed
-        if input.KeyCode == Enum.KeyCode.LeftBracket then
+        -- Numpad 2: Toggle Aimbot
+        if input.KeyCode == Enum.KeyCode.KeypadTwo then
             Settings.Aimbot.Enabled = not Settings.Aimbot.Enabled
         end
 
-        -- Toggle Aimbot TeamCheck when ; is pressed
-        if input.KeyCode == Enum.KeyCode.Semicolon then
+        -- Numpad 3: Toggle ESP Boxes
+        if input.KeyCode == Enum.KeyCode.KeypadThree then
+            Settings.ESP.Boxes = not Settings.ESP.Boxes
+        end
+
+        -- Numpad 4: Toggle ESP Names
+        if input.KeyCode == Enum.KeyCode.KeypadFour then
+            Settings.ESP.Names = not Settings.ESP.Names
+        end
+
+        -- Numpad 5: Toggle ESP Distance
+        if input.KeyCode == Enum.KeyCode.KeypadFive then
+            Settings.ESP.Distance = not Settings.ESP.Distance
+        end
+
+        -- Numpad 6: Toggle Snaplines
+        if input.KeyCode == Enum.KeyCode.KeypadSix then
+            Settings.ESP.Snaplines = not Settings.ESP.Snaplines
+        end
+
+        -- Numpad 7: Toggle Team Check
+        if input.KeyCode == Enum.KeyCode.KeypadSeven then
+            Settings.ESP.TeamCheck = not Settings.ESP.TeamCheck
             Settings.Aimbot.TeamCheck = not Settings.Aimbot.TeamCheck
         end
 
-        -- Toggle ESP TeamCheck when ' is pressed
-        if input.KeyCode == Enum.KeyCode.Quote then
-            Settings.ESP.TeamCheck = not Settings.ESP.TeamCheck
+        -- Numpad 8: Toggle Rainbow ESP
+        if input.KeyCode == Enum.KeyCode.KeypadEight then
+            Settings.ESP.Rainbow = not Settings.ESP.Rainbow
+        end
+
+        -- Numpad 9: Toggle FOV Circle
+        if input.KeyCode == Enum.KeyCode.KeypadNine then
+            Settings.Aimbot.ShowFOV = not Settings.Aimbot.ShowFOV
+            FOVCircle.Visible = Settings.Aimbot.ShowFOV
         end
     end
 end)
-
--- Initialize UI Elements
-local function InitializeUI()
-    -- ESP Page
-    CreateToggle(Pages.ESP, "Enable ESP", function(enabled)
-        Settings.ESP.Enabled = enabled
-    end)
-    
-    CreateToggle(Pages.ESP, "Box ESP", function(enabled)
-        Settings.ESP.Boxes = enabled
-    end)
-    
-    CreateToggle(Pages.ESP, "Snaplines", function(enabled)
-        Settings.ESP.Snaplines = enabled
-    end)
-    
-    CreateToggle(Pages.ESP, "Team Check", function(enabled)
-        Settings.ESP.TeamCheck = enabled
-    end)
-    
-    CreateToggle(Pages.ESP, "Rainbow Mode", function(enabled)
-        Settings.ESP.Rainbow = enabled
-    end)
-
-    -- Aimbot Page
-    CreateToggle(Pages.Aimbot, "Enable Aimbot", function(enabled)
-        Settings.Aimbot.Enabled = enabled
-    end)
-
-    CreateToggle(Pages.Aimbot, "Show FOV", function(enabled)
-        Settings.Aimbot.ShowFOV = enabled
-        FOVCircle.Visible = enabled
-    end)
-
-    CreateToggle(Pages.Aimbot, "Team Check", function(enabled)
-        Settings.Aimbot.TeamCheck = enabled
-    end)
-
-    CreateSlider(Pages.Aimbot, "Smoothness", 1, 10, 1, function(value)
-        Settings.Aimbot.Smoothness = value
-    end)
-
-    CreateSlider(Pages.Aimbot, "FOV Size", 10, 800, 100, function(value)
-        Settings.Aimbot.FOV = value
-        FOVCircle.Radius = value
-    end)
-
-    -- Misc Page
-    CreateToggle(Pages.Misc, "No Recoil", function(enabled)
-        Settings.Misc.NoRecoil = enabled
-    end)
-
-    CreateToggle(Pages.Misc, "Bunny Hop", function(enabled)
-        Settings.Misc.BunnyHop = enabled
-    end)
-end
 
 -- Initialize ESP for existing players
 for _, player in pairs(Players:GetPlayers()) do
@@ -353,18 +260,17 @@ end)
 -- Cleanup when players leave
 Players.PlayerRemoving:Connect(function(player)
     if Settings.ESP.Players[player] then
-        Settings.ESP.Players[player]:Remove()
+        for _, drawing in pairs(Settings.ESP.Players[player]) do
+            drawing:Remove()
+        end
         Settings.ESP.Players[player] = nil
-    end
-    if Settings.ESP.Tracers[player] then
-        Settings.ESP.Tracers[player]:Remove()
-        Settings.ESP.Tracers[player] = nil
     end
 end)
 
 -- Main Update Loop
 RunService.RenderStepped:Connect(function()
-    UpdateESP() -- Make sure this is called every frame
+    UpdateESP()
+    
     if Settings.Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         local target = GetClosestPlayer()
         if target and target.Character then
@@ -384,7 +290,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-
+    
     if Settings.Aimbot.ShowFOV then
         FOVCircle.Position = UserInputService:GetMouseLocation()
         FOVCircle.Radius = Settings.Aimbot.FOV
