@@ -31,10 +31,6 @@ Settings = {
         FOV = 100,
         TargetPart = "Head",
         ShowFOV = false
-    },
-    Misc = {
-        NoRecoil = false,
-        BunnyHop = false
     }
 }
 
@@ -57,12 +53,43 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 669, 0, 400)
 MainFrame.Position = UDim2.new(0.5, -334, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ZIndex = 999999
 MainFrame.Parent = ScreenGui
+
+-- Particle Background
+local ParticleBackground = Instance.new("Frame")
+ParticleBackground.Name = "ParticleBackground"
+ParticleBackground.Size = UDim2.new(1, 0, 1, 0)
+ParticleBackground.BackgroundTransparency = 0
+ParticleBackground.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ParticleBackground.ZIndex = 999998
+ParticleBackground.Parent = MainFrame
+
+-- Create particle effects
+for i = 1, 50 do
+    local Particle = Instance.new("Frame")
+    Particle.Size = UDim2.new(0, 2, 0, 2)
+    Particle.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+    Particle.BackgroundTransparency = 0.5
+    Particle.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    Particle.Parent = ParticleBackground
+    
+    spawn(function()
+        while true do
+            local tween = TweenService:Create(Particle, 
+                TweenInfo.new(math.random(2, 5)), 
+                {Position = UDim2.new(math.random(), 0, math.random(), 0)})
+            tween:Play()
+            wait(math.random(2, 5))
+        end
+    end)
+end
+
+
 -- UI Elements
 local UICorner_Main = Instance.new("UICorner")
 UICorner_Main.CornerRadius = UDim.new(0, 10)
@@ -99,6 +126,7 @@ UIGradient_Title.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 0, 200))
 }
 UIGradient_Title.Parent = Title
+
 -- FOV Circle Setup
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 2
@@ -253,6 +281,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     Value.TextSize = 14
     Value.Font = Enum.Font.GothamSemibold
     Value.Parent = SliderFrame
+
     local dragging = false
     SliderButton.MouseButton1Down:Connect(function()
         dragging = true
@@ -282,13 +311,12 @@ end
 -- Create Pages
 local Pages = {
     ESP = CreatePage("ESP"),
-    Aimbot = CreatePage("Aimbot"),
-    Misc = CreatePage("Misc")
+    Aimbot = CreatePage("Aimbot")
 }
 
 -- Setup Navigation
 local NavButtons = {}
-local PageOrder = {"ESP", "Aimbot", "Misc"}
+local PageOrder = {"ESP", "Aimbot"}
 
 for i, pageName in ipairs(PageOrder) do
     local btn = CreateNavButton(pageName, UDim2.new((i-1) * 0.33, 2, 0, 2))
@@ -304,6 +332,7 @@ for i, pageName in ipairs(PageOrder) do
         btn.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
     end)
 end
+
 local function GetClosestPlayer()
     local closestPlayer = nil
     local shortestDistance = math.huge
@@ -370,6 +399,7 @@ local function CreateESP(player)
     
     Settings.ESP.Players[player] = esp
 end
+
 local function UpdateESP()
     for player, esp in pairs(Settings.ESP.Players) do
         if player.Character and player ~= Players.LocalPlayer and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -397,15 +427,6 @@ local function UpdateESP()
                     esp.Box.Visible = false
                 end
 
-                -- Snaplines
-                if Settings.ESP.Snaplines then
-                    esp.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-                    esp.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
-                    esp.Snapline.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
-                    esp.Snapline.Visible = true
-                else
-                    esp.Snapline.Visible = false
-                end
                 -- Names ESP
                 if Settings.ESP.Names and head then
                     esp.Name.Position = Vector2.new(screenPos.X, screenPos.Y - esp.Box.Size.Y / 2 - 15)
@@ -424,17 +445,22 @@ local function UpdateESP()
                 else
                     esp.Distance.Visible = false
                 end
+
+                -- Snaplines
+                if Settings.ESP.Snaplines then
+                    esp.Snapline.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+                    esp.Snapline.To = Vector2.new(screenPos.X, screenPos.Y)
+                    esp.Snapline.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
+                    esp.Snapline.Visible = true
+                else
+                    esp.Snapline.Visible = false
+                end
             else
                 esp.Box.Visible = false
                 esp.Name.Visible = false
                 esp.Distance.Visible = false
                 esp.Snapline.Visible = false
             end
-        else
-            esp.Box.Visible = false
-            esp.Name.Visible = false
-            esp.Distance.Visible = false
-            esp.Snapline.Visible = false
         end
     end
 end
@@ -482,15 +508,6 @@ local function InitializeUI()
     CreateSlider(Pages.Aimbot, "FOV Size", 10, 800, 100, function(value)
         Settings.Aimbot.FOV = value
         FOVCircle.Radius = value
-    end)
-
-    -- Misc Page
-    CreateToggle(Pages.Misc, "No Recoil", function(enabled)
-        Settings.Misc.NoRecoil = enabled
-    end)
-
-    CreateToggle(Pages.Misc, "Bunny Hop", function(enabled)
-        Settings.Misc.BunnyHop = enabled
     end)
 end
 -- Initialize ESP for existing players
@@ -542,7 +559,6 @@ RunService.RenderStepped:Connect(function()
 
     if Settings.Aimbot.ShowFOV then
         FOVCircle.Position = UserInputService:GetMouseLocation()
-        FOVCircle.Radius = Settings.Aimbot.FOV
         FOVCircle.Visible = true
     else
         FOVCircle.Visible = false
@@ -556,22 +572,57 @@ InitializeUI()
 Pages.ESP.Visible = true
 NavButtons.ESP.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
 
--- Toggle GUI visibility
+-- Cleanup function for End/Delete keys
+local function CleanupEverything()
+    -- Turn off all settings
+    for category, settings in pairs(Settings) do
+        for setting, _ in pairs(settings) do
+            if type(Settings[category][setting]) == "boolean" then
+                Settings[category][setting] = false
+            end
+        end
+    end
+
+    -- Clean up ESP drawings
+    for player, esp in pairs(Settings.ESP.Players) do
+        for _, drawing in pairs(esp) do
+            drawing:Remove()
+        end
+    end
+    Settings.ESP.Players = {}
+
+    -- Remove FOV Circle
+    FOVCircle:Remove()
+
+    -- Remove GUI
+    ScreenGui:Destroy()
+
+    -- Clear variables
+    Settings = nil
+    Pages = nil
+    NavButtons = nil
+end
+
+-- Input handling for GUI toggle and cleanup
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.Insert then
+            MainFrame.Visible = not MainFrame.Visible
+        elseif input.KeyCode == Enum.KeyCode.End or input.KeyCode == Enum.KeyCode.Delete then
+            CleanupEverything()
+        end
     end
 end)
 
 -- Create Watermark
 local Watermark = Instance.new("TextLabel")
-Watermark.Text = "Made by Syfer-eng"
+Watermark.Text = "Made By Syfer-eng"
 Watermark.Size = UDim2.new(1, 0, 0, 20)
-Watermark.Position = UDim2.new(0, 0, 1, -20)
+Watermark.Position = UDim2.new(0, 0, 1, -25)
 Watermark.BackgroundTransparency = 1
 Watermark.TextColor3 = Color3.fromRGB(255, 0, 255)
 Watermark.Font = Enum.Font.GothamBold
-Watermark.TextSize = 14
+Watermark.TextSize = 16
 Watermark.Parent = MainFrame
 
 print("Syfer-eng's Menu Loaded Successfully!")
