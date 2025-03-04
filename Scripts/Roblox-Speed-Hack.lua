@@ -1,4 +1,3 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Loading/Speed.lua",true))()
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local tweenService = game:GetService("TweenService")
@@ -144,65 +143,6 @@ local unloadCorner = Instance.new("UICorner")
 unloadCorner.CornerRadius = UDim.new(0, 8)
 unloadCorner.Parent = unloadButton
 
--- Enhanced Black Comet Effect
-local function createComet()
-    local comet = Instance.new("Frame")
-    comet.Size = UDim2.new(0, 4, 0, 4)
-    comet.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    comet.BorderSizePixel = 0
-    comet.Parent = mainWindow
-    
-    for i = 1, 5 do
-        local trail = Instance.new("Frame")
-        trail.Size = UDim2.new(0, 25 - (i * 4), 0, 3 - (i * 0.4))
-        trail.Position = UDim2.new(0, -(25 - (i * 4)), 0, 0.5)
-        trail.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        trail.BackgroundTransparency = 0.2 * i
-        trail.BorderSizePixel = 0
-        trail.Parent = comet
-        
-        local glow = Instance.new("ImageLabel")
-        glow.Size = UDim2.new(1.2, 0, 1.2, 0)
-        glow.Position = UDim2.new(-0.1, 0, -0.1, 0)
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://7331079227"
-        glow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-        glow.ImageTransparency = 0.5 + (0.1 * i)
-        glow.Parent = trail
-    end
-    
-    local startX = math.random(-50, 0)
-    local startY = math.random(0, mainWindow.AbsoluteSize.Y)
-    comet.Position = UDim2.new(0, startX, 0, startY)
-    
-    local endX = mainWindow.AbsoluteSize.X + 50
-    local endY = startY + math.random(100, 200)
-    
-    local tweenInfo = TweenInfo.new(
-        math.random(8, 12) / 10,
-        Enum.EasingStyle.Linear
-    )
-    
-    local tween = tweenService:Create(comet, tweenInfo, {
-        Position = UDim2.new(0, endX, 0, endY),
-        BackgroundTransparency = 1
-    })
-    
-    tween:Play()
-    tween.Completed:Connect(function()
-        comet:Destroy()
-    end)
-end
-
--- Spawn Enhanced Comets
-spawn(function()
-    while wait(0.2) do
-        if mainWindow.Visible then
-            createComet()
-        end
-    end
-end)
-
 -- Speed Control Logic
 local dragging = false
 local minSpeed = 16
@@ -234,13 +174,18 @@ runService.RenderStepped:Connect(function()
         currentSpeed = math.floor(minSpeed + (maxSpeed - minSpeed) * relativeX)
         speedDisplay.Text = "Speed: " .. currentSpeed
         
+        -- Update the stored speed and apply it to the player's character
+        player:SetAttribute("CurrentSpeed", currentSpeed)
         local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
         if humanoid then
             humanoid.WalkSpeed = currentSpeed
         end
-
-        -- Update the stored speed
-        player:SetAttribute("CurrentSpeed", currentSpeed)
+    end
+    
+    -- Continuously ensure the speed is updated if the player's character respawns or resets.
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    if humanoid and humanoid.WalkSpeed ~= currentSpeed then
+        humanoid.WalkSpeed = currentSpeed
     end
 end)
 
