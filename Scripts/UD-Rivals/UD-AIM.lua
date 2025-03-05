@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 
 -- Enhanced settings with Rivals-specific configurations
@@ -23,7 +22,7 @@ local Settings = {
     Aimbot = {
         Enabled = true,
         TeamCheck = false,
-        Smoothness = 0.5,
+        Smoothness = 0.2,  -- Adjusted for more precise aiming
         FOV = 150,
         TargetPart = "Head",
         ShowFOV = true,
@@ -34,7 +33,7 @@ local Settings = {
     }
 }
 
--- Improved FOV Circle
+-- FOV Circle to visualize the aimbot targeting area
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 1.5
 FOVCircle.NumSides = 60
@@ -45,7 +44,7 @@ FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
--- Enhanced ESP creation function
+-- Create ESP for players
 local function CreateESP(player)
     local esp = {
         Box = Drawing.new("Square"),
@@ -56,34 +55,34 @@ local function CreateESP(player)
         HealthBarBackground = Drawing.new("Square")
     }
     
-    -- Box setup
+    -- ESP Box
     esp.Box.Visible = false
     esp.Box.Color = Settings.ESP.BoxColor
     esp.Box.Thickness = 1
     esp.Box.Filled = false
     esp.Box.Transparency = 1
     
-    -- Name setup
+    -- ESP Name
     esp.Name.Visible = false
     esp.Name.Color = Color3.new(1, 1, 1)
     esp.Name.Size = 14
     esp.Name.Center = true
     esp.Name.Outline = true
     
-    -- Distance setup
+    -- ESP Distance
     esp.Distance.Visible = false
     esp.Distance.Color = Color3.new(1, 1, 1)
     esp.Distance.Size = 12
     esp.Distance.Center = true
     esp.Distance.Outline = true
     
-    -- Snapline setup
+    -- ESP Snapline
     esp.Snapline.Visible = false
     esp.Snapline.Color = Settings.ESP.BoxColor
     esp.Snapline.Thickness = 1
     esp.Snapline.Transparency = 1
     
-    -- Health bar setup
+    -- Health Bar
     esp.HealthBar.Visible = false
     esp.HealthBar.Color = Color3.fromRGB(0, 255, 0)
     esp.HealthBar.Filled = true
@@ -99,27 +98,11 @@ local function CreateESP(player)
     Settings.ESP.Players[player] = esp
 end
 
--- Get the gun muzzle position
-local function GetGunMuzzlePosition(player)
-    -- Assume the weapon is part of the character, specifically looking for the gun's muzzle
-    local character = player.Character
-    if character then
-        local weapon = character:FindFirstChild("Weapon")  -- Change this based on the actual weapon name in Rivals
-        if weapon then
-            local muzzle = weapon:FindFirstChild("Muzzle")  -- Adjust for the actual part in the game
-            if muzzle then
-                return muzzle.Position
-            end
-        end
-    end
-    return nil
-end
-
--- Enhanced target acquisition
+-- Get the closest player based on the FOV and distance
 local function GetClosestPlayer()
     local closestPlayer, shortestDistance = nil, Settings.Aimbot.FOV
     local mousePos = UserInputService:GetMouseLocation()
-    
+
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             if Settings.Aimbot.TeamCheck and player.Team == Players.LocalPlayer.Team then continue end
@@ -129,15 +112,11 @@ local function GetClosestPlayer()
             
             local targetPart = player.Character:FindFirstChild(Settings.Aimbot.TargetPart)
             if not targetPart then
-                -- If the target part is not found, aim at the humanoid root part.
+                -- Default to HumanoidRootPart if the specific target part is not found
                 targetPart = player.Character.HumanoidRootPart
             end
             
-            local velocity = player.Character.HumanoidRootPart.Velocity
-            local prediction = velocity * Settings.Aimbot.PredictionMultiplier
-            local predictedPosition = targetPart.Position + prediction
-            
-            local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(predictedPosition)
+            local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
             if onScreen then
                 local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
                 if distance < shortestDistance then
@@ -150,23 +129,28 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
--- Improved aiming mechanics with additional prediction and smoothness
+-- Smooth aimbot aiming function (ONLY moving the mouse)
 local function AimAt(targetPosition)
     local camera = workspace.CurrentCamera
     local mousePos = UserInputService:GetMouseLocation()
     local targetPos = camera:WorldToViewportPoint(targetPosition)
-    
-    -- Smooth aiming with dynamic adjustment based on distance
+
+    -- Calculate aim delta for smooth movement
     local aimDelta = Vector2.new(
         (targetPos.X - mousePos.X) * Settings.Aimbot.Smoothness,
         (targetPos.Y - mousePos.Y) * Settings.Aimbot.Smoothness
     )
-    
-    -- Apply small corrective movements to the mouse for better aim
-    mousemoverel(aimDelta.X, aimDelta.Y)
+
+    -- Set a fixed speed for the mouse movement, adjusting the speed of movement
+    local speed = 0.5 -- Speed multiplier for mouse movement, adjust as necessary
+    local moveX = aimDelta.X * speed
+    local moveY = aimDelta.Y * speed
+
+    -- Apply small mouse movement (simulating moving the mouse)
+    mousemoverel(moveX, moveY)
 end
 
--- Enhanced ESP update function
+-- Update ESP for all players
 local function UpdateESP()
     for player, esp in pairs(Settings.ESP.Players) do
         if player.Character and player ~= Players.LocalPlayer then
@@ -178,7 +162,7 @@ local function UpdateESP()
                 local distance = (humanoidRootPart.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
                 
                 if onScreen and distance <= Settings.ESP.MaxDistance then
-                    -- Update box
+                    -- Update box and health bar
                     local size = (workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(2, 3, 0)).Y - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-2, -3, 0)).Y) / 2
                     esp.Box.Size = Vector2.new(size * 1.5, size * 3)
                     esp.Box.Position = Vector2.new(pos.X - esp.Box.Size.X / 2, pos.Y - esp.Box.Size.Y / 2)
@@ -247,6 +231,11 @@ end)
 
 -- Main update loop
 RunService.RenderStepped:Connect(function()
+    -- Update FOV Circle's position to always follow the mouse
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Visible = Settings.Aimbot.ShowFOV
+    
+    -- Update ESP for all players
     UpdateESP()
     
     if Settings.Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
@@ -258,16 +247,25 @@ RunService.RenderStepped:Connect(function()
                 local prediction = velocity * Settings.Aimbot.PredictionMultiplier
                 local predictedPosition = targetPart.Position + prediction
                 
+                -- Move the mouse towards the predicted position
                 AimAt(predictedPosition)
+                
+                -- Ensure the player is directly centered in the FOV
+                local camera = workspace.CurrentCamera
+                local mousePos = UserInputService:GetMouseLocation()
+                local targetPos = camera:WorldToViewportPoint(targetPart.Position)
+                local aimDistance = (Vector2.new(targetPos.X, targetPos.Y) - mousePos).Magnitude
+
+                -- Only aim if the target is not already in the center of the FOV
+                if aimDistance > 10 then
+                    AimAt(targetPart.Position)
+                end
             end
         end
     end
-    
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-    FOVCircle.Visible = Settings.Aimbot.ShowFOV
 end)
 
--- Keybind handling
+-- Keybind handling for toggles
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed then
         local keyBinds = {
