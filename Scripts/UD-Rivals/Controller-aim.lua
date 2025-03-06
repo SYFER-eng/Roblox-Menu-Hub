@@ -23,7 +23,8 @@ local Toggles = {
     Names = true,
     Distance = true,
     Snaplines = true,
-    Health = true
+    Health = true,
+    TeamCheck = true
 }
 
 local Settings = {
@@ -34,7 +35,7 @@ local Settings = {
         Distance = true,
         Health = true,
         Snaplines = true,
-        TeamCheck = false,
+        TeamCheck = true,
         Rainbow = true,
         BoxColor = Color3.fromRGB(255, 0, 255),
         Players = {},
@@ -43,8 +44,8 @@ local Settings = {
     },
     Aimbot = {
         Enabled = true,
-        TeamCheck = false,
-        Smoothness = 0.2,
+        TeamCheck = true,
+        Smoothness = 0.7,
         FOV = 150,
         TargetPart = "Head",
         ShowFOV = true,
@@ -69,7 +70,22 @@ FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 local function perfectAim(targetPart)
     local mouseLocation = UserInputService:GetMouseLocation()
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
-    mousemoverel(targetPosition.X - mouseLocation.X, targetPosition.Y - mouseLocation.Y)
+    
+    local velocity = targetPart.Velocity
+    local prediction = velocity * Settings.Aimbot.PredictionMultiplier
+    local predictedPosition = targetPart.Position + prediction
+    local finalPosition = camera:WorldToViewportPoint(predictedPosition)
+    
+    local aimDeltaX = (finalPosition.X - mouseLocation.X)
+    local aimDeltaY = (finalPosition.Y - mouseLocation.Y)
+    
+    local smoothness = Settings.Aimbot.Smoothness
+    local moveX = aimDeltaX * smoothness
+    local moveY = aimDeltaY * smoothness
+    
+    if finalPosition.Z > 0 then
+        mousemoverel(moveX, moveY)
+    end
 end
 
 local function CreateESP(player)
@@ -127,7 +143,6 @@ local function GetClosestPlayerToMouse()
 
     if targetPlayer and isRightMouseDown then
         if targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
-            -- Check if targetPlayer is not localPlayer
             if targetPlayer ~= localPlayer then
                 return targetPlayer
             end
@@ -135,8 +150,11 @@ local function GetClosestPlayerToMouse()
     end
 
     for _, player in ipairs(Players:GetPlayers()) do
-        -- Add explicit check to exclude localPlayer
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild(AimSettings.TargetPart) then
+            if Settings.Aimbot.TeamCheck and player.Team == localPlayer.Team then
+                continue
+            end
+            
             local targetPart = player.Character[AimSettings.TargetPart]
             local targetPosition, onScreen = camera:WorldToViewportPoint(targetPart.Position)
             
@@ -165,6 +183,10 @@ local function UpdateESP()
     
     for player, esp in pairs(Settings.ESP.Players) do
         if player.Character and player ~= localPlayer then
+            if Settings.ESP.TeamCheck and player.Team == localPlayer.Team then
+                continue
+            end
+            
             local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
             local humanoid = player.Character:FindFirstChild("Humanoid")
             
@@ -209,17 +231,6 @@ local function UpdateESP()
                     esp.HealthBarBackground.Visible = false
                 end
             end
-        end
-    end
-end
-
-local function lockCameraToHead()
-    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
-        local targetPart = targetPlayer.Character[AimSettings.TargetPart]
-        local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
-        if targetPosition.Z > 0 then
-            local cameraPosition = camera.CFrame.Position
-            camera.CFrame = CFrame.new(cameraPosition, targetPart.Position)
         end
     end
 end
@@ -274,6 +285,11 @@ local toggleKeys = {
     end,
     [Enum.KeyCode.KeypadSeven] = function()
         Toggles.Health = not Toggles.Health
+    end,
+    [Enum.KeyCode.KeypadNine] = function()
+        Toggles.TeamCheck = not Toggles.TeamCheck
+        Settings.ESP.TeamCheck = Toggles.TeamCheck
+        Settings.Aimbot.TeamCheck = Toggles.TeamCheck
     end
 }
 
@@ -341,11 +357,7 @@ RunService.RenderStepped:Connect(function()
         if targetPlayer and targetPlayer.Character then
             local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
             if targetPart then
-                if AimSettings.SilentAim then
-                    perfectAim(targetPart)
-                else
-                    lockCameraToHead()
-                end
+                perfectAim(targetPart)
             end
         end
     end
