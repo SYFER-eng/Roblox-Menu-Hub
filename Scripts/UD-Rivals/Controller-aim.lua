@@ -10,27 +10,10 @@ local isLeftMouseDown = false
 local isRightMouseDown = false
 local autoClickConnection = nil
 
-local ControllerSettings = {
-    AimAssist = true,
-    AimAssistStrength = 0.5,
-    DeadZone = 0.1,
-    Sensitivity = {
-        X = 1.0,
-        Y = 1.0
-    }
-}
-
 local AimSettings = {
     SilentAim = true,
     HitChance = 100,
-    TargetPart = "Head",
-    PredictionEnabled = true,
-    PredictionAmount = 0.165,
-    AutoPrediction = {
-        Enabled = true,
-        Ping = 30,
-        Amount = 0.165
-    }
+    TargetPart = "Head"
 }
 
 local Toggles = {
@@ -46,32 +29,33 @@ local Toggles = {
 local Settings = {
     ESP = {
         Enabled = true,
-        BoxStyle = "Corner",
-        BoxThickness = 2,
-        BoxTransparency = 0.8,
-        MaxDistance = 2000,
+        Boxes = true,
+        Names = true,
+        Distance = true,
+        Health = true,
+        Snaplines = true,
         TeamCheck = false,
-        HealthBarStyle = "Side",
-        RainbowSpeed = 1,
-        RefreshRate = 0.1,
-        Players = {},
+        Rainbow = true,
         BoxColor = Color3.fromRGB(255, 0, 255),
+        Players = {},
+        MaxDistance = 1000,
         HealthBarSize = Vector2.new(2, 20)
     },
     Aimbot = {
         Enabled = true,
         TeamCheck = false,
-        Smoothness = 0.009,
-        FOV = 180,
-        DynamicFOV = true,
-        FOVScaleWithDistance = true,
-        PredictMovement = true,
-        MaxDistance = 500,
-        TargetPriority = "Distance",
-        ShowFOV = true
-    },
-    Controller = ControllerSettings
+        Smoothness = 0.2,
+        FOV = 150,
+        TargetPart = "Head",
+        ShowFOV = true,
+        PredictionMultiplier = 1.5,
+        AutoPrediction = true,
+        TriggerBot = false,
+        TriggerDelay = 0.1,
+        MaxDistance = 250
+    }
 }
+
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 1.5
 FOVCircle.NumSides = 60
@@ -82,48 +66,12 @@ FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
-local function HandleControllerInput()
-    local rightThumb = UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1).Thumbstick2
-    local leftThumb = UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1).Thumbstick1
-    
-    if math.abs(rightThumb.X) < Settings.Controller.DeadZone then rightThumb = Vector2.new(0, rightThumb.Y) end
-    if math.abs(rightThumb.Y) < Settings.Controller.DeadZone then rightThumb = Vector2.new(rightThumb.X, 0) end
-    
-    if Settings.Controller.AimAssist and Settings.Aimbot.Enabled then
-        local target = GetClosestPlayerToMouse()
-        if target and target.Character then
-            local targetPart = target.Character:FindFirstChild(AimSettings.TargetPart)
-            if targetPart then
-                local targetPos = camera:WorldToViewportPoint(targetPart.Position)
-                local mousePos = UserInputService:GetMouseLocation()
-                local diff = Vector2.new(
-                    (targetPos.X - mousePos.X) * Settings.Controller.AimAssistStrength,
-                    (targetPos.Y - mousePos.Y) * Settings.Controller.AimAssistStrength
-                )
-                rightThumb = rightThumb + Vector2.new(diff.X, diff.Y)
-            end
-        end
-    end
-    
-    if rightThumb.Magnitude > 0 then
-        local rotX = rightThumb.X * Settings.Controller.Sensitivity.X
-        local rotY = rightThumb.Y * Settings.Controller.Sensitivity.Y
-        camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(-rotY), math.rad(rotX), 0)
-    end
+local function perfectAim(targetPart)
+    local mouseLocation = UserInputService:GetMouseLocation()
+    local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
+    mousemoverel(targetPosition.X - mouseLocation.X, targetPosition.Y - mouseLocation.Y)
 end
 
-local function PredictPosition(target)
-    if not AimSettings.PredictionEnabled then return target.Position end
-    
-    local velocity = target.Velocity
-    local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
-    
-    local predictionAmount = AimSettings.AutoPrediction.Enabled and 
-        (ping / 1000 * AimSettings.AutoPrediction.Amount) or 
-        AimSettings.PredictionAmount
-    
-    return target.Position + (velocity * predictionAmount)
-end
 local function CreateESP(player)
     local esp = {
         Box = Drawing.new("Square"),
@@ -136,9 +84,9 @@ local function CreateESP(player)
     
     esp.Box.Visible = false
     esp.Box.Color = Settings.ESP.BoxColor
-    esp.Box.Thickness = Settings.ESP.BoxThickness
-    esp.Box.Transparency = Settings.ESP.BoxTransparency
+    esp.Box.Thickness = 1
     esp.Box.Filled = false
+    esp.Box.Transparency = 1
     
     esp.Name.Visible = false
     esp.Name.Color = Color3.new(1, 1, 1)
@@ -179,11 +127,15 @@ local function GetClosestPlayerToMouse()
 
     if targetPlayer and isRightMouseDown then
         if targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
-            return targetPlayer
+            -- Check if targetPlayer is not localPlayer
+            if targetPlayer ~= localPlayer then
+                return targetPlayer
+            end
         end
     end
 
     for _, player in ipairs(Players:GetPlayers()) do
+        -- Add explicit check to exclude localPlayer
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild(AimSettings.TargetPart) then
             local targetPart = player.Character[AimSettings.TargetPart]
             local targetPosition, onScreen = camera:WorldToViewportPoint(targetPart.Position)
@@ -207,6 +159,7 @@ local function GetClosestPlayerToMouse()
 
     return closestPlayer
 end
+
 local function UpdateESP()
     if not Toggles.ESP then return end
     
@@ -222,43 +175,31 @@ local function UpdateESP()
                 if onScreen and distance <= Settings.ESP.MaxDistance then
                     local size = (camera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(2, 3, 0)).Y - camera:WorldToViewportPoint(humanoidRootPart.Position + Vector3.new(-2, -3, 0)).Y) / 2
                     
-                    if Settings.ESP.BoxStyle == "Corner" then
-                        local cornerSize = size * 0.2
-                        esp.Box.Size = Vector2.new(size * 1.5, size * 3)
-                        esp.Box.Position = Vector2.new(pos.X - esp.Box.Size.X / 2, pos.Y - esp.Box.Size.Y / 2)
-                    else
-                        esp.Box.Size = Vector2.new(size * 1.5, size * 3)
-                        esp.Box.Position = Vector2.new(pos.X - esp.Box.Size.X / 2, pos.Y - esp.Box.Size.Y / 2)
-                    end
+                    esp.Box.Size = Vector2.new(size * 1.5, size * 3)
+                    esp.Box.Position = Vector2.new(pos.X - esp.Box.Size.X / 2, pos.Y - esp.Box.Size.Y / 2)
+                    esp.Box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Settings.ESP.BoxColor
+                    esp.Box.Visible = Toggles.Boxes and Settings.ESP.Boxes
                     
-                    esp.Box.Color = Settings.ESP.Rainbow and Color3.fromHSV(tick() * Settings.ESP.RainbowSpeed % 1, 1, 1) or Settings.ESP.BoxColor
-                    esp.Box.Visible = Toggles.Boxes
+                    local healthBarHeight = esp.Box.Size.Y * (humanoid.Health / humanoid.MaxHealth)
+                    esp.HealthBarBackground.Size = Vector2.new(Settings.ESP.HealthBarSize.X, esp.Box.Size.Y)
+                    esp.HealthBarBackground.Position = Vector2.new(esp.Box.Position.X - esp.HealthBarBackground.Size.X * 2, esp.Box.Position.Y)
+                    esp.HealthBarBackground.Visible = Toggles.Health and Settings.ESP.Health
                     
-                    local healthPercent = humanoid.Health / humanoid.MaxHealth
-                    local healthColor = Color3.fromRGB(
-                        255 * (1 - healthPercent),
-                        255 * healthPercent,
-                        0
-                    )
-                    
-                    if Settings.ESP.HealthBarStyle == "Side" then
-                        local healthBarHeight = esp.Box.Size.Y * healthPercent
-                        esp.HealthBar.Size = Vector2.new(Settings.ESP.HealthBarSize.X, healthBarHeight)
-                        esp.HealthBar.Position = Vector2.new(esp.Box.Position.X - esp.HealthBar.Size.X * 2, esp.Box.Position.Y + esp.Box.Size.Y - healthBarHeight)
-                        esp.HealthBar.Color = healthColor
-                    end
+                    esp.HealthBar.Size = Vector2.new(Settings.ESP.HealthBarSize.X, healthBarHeight)
+                    esp.HealthBar.Position = Vector2.new(esp.Box.Position.X - esp.HealthBar.Size.X * 2, esp.Box.Position.Y + esp.Box.Size.Y - healthBarHeight)
+                    esp.HealthBar.Visible = Toggles.Health and Settings.ESP.Health
                     
                     esp.Name.Position = Vector2.new(pos.X, esp.Box.Position.Y - 20)
-                    esp.Name.Text = string.format("%s [%d%%]", player.Name, healthPercent * 100)
-                    esp.Name.Visible = Toggles.Names
+                    esp.Name.Text = player.Name
+                    esp.Name.Visible = Toggles.Names and Settings.ESP.Names
                     
                     esp.Distance.Position = Vector2.new(pos.X, esp.Box.Position.Y + esp.Box.Size.Y + 10)
                     esp.Distance.Text = string.format("%.0f studs", distance)
-                    esp.Distance.Visible = Toggles.Distance
+                    esp.Distance.Visible = Toggles.Distance and Settings.ESP.Distance
                     
                     esp.Snapline.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
                     esp.Snapline.To = Vector2.new(pos.X, pos.Y)
-                    esp.Snapline.Visible = Toggles.Snaplines
+                    esp.Snapline.Visible = Toggles.Snaplines and Settings.ESP.Snaplines
                 else
                     esp.Box.Visible = false
                     esp.Name.Visible = false
@@ -271,27 +212,37 @@ local function UpdateESP()
         end
     end
 end
-local controllerButtons = {
-    [Enum.KeyCode.ButtonL2] = function()
-        isRightMouseDown = true
-        targetPlayer = GetClosestPlayerToMouse()
-    end,
-    [Enum.KeyCode.ButtonR2] = function()
-        isLeftMouseDown = true
-    end,
-    [Enum.KeyCode.DPadUp] = function()
-        Toggles.ESP = not Toggles.ESP
-    end,
-    [Enum.KeyCode.DPadRight] = function()
-        Toggles.Aimbot = not Toggles.Aimbot
-    end,
-    [Enum.KeyCode.DPadDown] = function()
-        Toggles.Boxes = not Toggles.Boxes
-    end,
-    [Enum.KeyCode.DPadLeft] = function()
-        Toggles.Names = not Toggles.Names
+
+local function lockCameraToHead()
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
+        local targetPart = targetPlayer.Character[AimSettings.TargetPart]
+        local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
+        if targetPosition.Z > 0 then
+            local cameraPosition = camera.CFrame.Position
+            camera.CFrame = CFrame.new(cameraPosition, targetPart.Position)
+        end
     end
-}
+end
+
+local function cleanup()
+    FOVCircle:Remove()
+    
+    for _, esp in pairs(Settings.ESP.Players) do
+        for _, drawing in pairs(esp) do
+            drawing:Remove()
+        end
+    end
+    
+    Settings.ESP.Players = {}
+    targetPlayer = nil
+    isLeftMouseDown = false
+    isRightMouseDown = false
+    if autoClickConnection then
+        autoClickConnection:Disconnect()
+    end
+    
+    script:Destroy()
+end
 
 local toggleKeys = {
     [Enum.KeyCode.KeypadOne] = function()
@@ -323,42 +274,15 @@ local toggleKeys = {
     end,
     [Enum.KeyCode.KeypadSeven] = function()
         Toggles.Health = not Toggles.Health
-    end,
-    [Enum.KeyCode.KeypadEight] = function()
-        Settings.ESP.BoxStyle = Settings.ESP.BoxStyle == "Corner" and "Full" or "Corner"
-    end,
-    [Enum.KeyCode.KeypadNine] = function()
-        Settings.Aimbot.DynamicFOV = not Settings.Aimbot.DynamicFOV
     end
 }
 
-local function cleanup()
-    FOVCircle:Remove()
-    
-    for _, esp in pairs(Settings.ESP.Players) do
-        for _, drawing in pairs(esp) do
-            drawing:Remove()
-        end
-    end
-    
-    Settings.ESP.Players = {}
-    targetPlayer = nil
-    isLeftMouseDown = false
-    isRightMouseDown = false
-    if autoClickConnection then
-        autoClickConnection:Disconnect()
-    end
-    
-    script:Destroy()
-end
--- Initialize ESP for existing players
 for _, player in pairs(Players:GetPlayers()) do
     if player ~= localPlayer then
         CreateESP(player)
     end
 end
 
--- Player Events
 Players.PlayerAdded:Connect(function(player)
     if player ~= localPlayer then
         CreateESP(player)
@@ -374,75 +298,53 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Input Handling
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    if input.UserInputType == Enum.UserInputType.Gamepad1 then
-        if controllerButtons[input.KeyCode] then
-            controllerButtons[input.KeyCode]()
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isLeftMouseDown = true
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isRightMouseDown = true
+        if not targetPlayer then
+            targetPlayer = GetClosestPlayerToMouse()
         end
-    else
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isLeftMouseDown = true
-        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-            isRightMouseDown = true
-            if not targetPlayer then
-                targetPlayer = GetClosestPlayerToMouse()
-            end
-        elseif input.KeyCode == Enum.KeyCode.End then
-            cleanup()
-        end
-        
-        if toggleKeys[input.KeyCode] then
-            toggleKeys[input.KeyCode]()
-        end
+    elseif input.KeyCode == Enum.KeyCode.End then
+        cleanup()
+    end
+    
+    if toggleKeys[input.KeyCode] then
+        toggleKeys[input.KeyCode]()
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    if input.UserInputType == Enum.UserInputType.Gamepad1 then
-        if input.KeyCode == Enum.KeyCode.ButtonL2 then
-            isRightMouseDown = false
-            targetPlayer = nil
-        elseif input.KeyCode == Enum.KeyCode.ButtonR2 then
-            isLeftMouseDown = false
-        end
-    else
-        -- Rest of the input handling remains the same
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isLeftMouseDown = false
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isRightMouseDown = false
+        targetPlayer = nil
     end
 end)
 
--- Main Loop
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = UserInputService:GetMouseLocation()
     FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
     
-    if Settings.Aimbot.DynamicFOV then
-        local scale = Settings.Aimbot.FOVScaleWithDistance and (camera.ViewportSize.Y / 1080) or 1
-        FOVCircle.Radius = Settings.Aimbot.FOV * scale
-    end
-    
     UpdateESP()
-    HandleControllerInput()
     
-    if Settings.Aimbot.Enabled and Toggles.Aimbot and (isRightMouseDown or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonL2)) then
+    if Settings.Aimbot.Enabled and Toggles.Aimbot and isRightMouseDown then
         if not targetPlayer then
             targetPlayer = GetClosestPlayerToMouse()
         end
         if targetPlayer and targetPlayer.Character then
             local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
             if targetPart then
-                local predictedPosition = PredictPosition(targetPart)
-                if Settings.Aimbot.Smoothness > 0 then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local targetPos = camera:WorldToViewportPoint(predictedPosition)
-                    mousemoverel(
-                        (targetPos.X - mousePos.X) * Settings.Aimbot.Smoothness,
-                        (targetPos.Y - mousePos.Y) * Settings.Aimbot.Smoothness
-                    )
+                if AimSettings.SilentAim then
+                    perfectAim(targetPart)
+                else
+                    lockCameraToHead()
                 end
             end
         end
