@@ -23,8 +23,7 @@ local Toggles = {
     Names = true,
     Distance = true,
     Snaplines = true,
-    Health = true,
-    TeamCheck = true
+    Health = true
 }
 
 local Settings = {
@@ -35,7 +34,7 @@ local Settings = {
         Distance = true,
         Health = true,
         Snaplines = true,
-        TeamCheck = true,
+        TeamCheck = false,
         Rainbow = true,
         BoxColor = Color3.fromRGB(255, 0, 255),
         Players = {},
@@ -44,8 +43,8 @@ local Settings = {
     },
     Aimbot = {
         Enabled = true,
-        TeamCheck = true,
-        Smoothness = 0.7,
+        TeamCheck = false,
+        Smoothness = 0.2,
         FOV = 150,
         TargetPart = "Head",
         ShowFOV = true,
@@ -70,22 +69,7 @@ FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 local function perfectAim(targetPart)
     local mouseLocation = UserInputService:GetMouseLocation()
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
-    
-    local velocity = targetPart.Velocity
-    local prediction = velocity * Settings.Aimbot.PredictionMultiplier
-    local predictedPosition = targetPart.Position + prediction
-    local finalPosition = camera:WorldToViewportPoint(predictedPosition)
-    
-    local aimDeltaX = (finalPosition.X - mouseLocation.X)
-    local aimDeltaY = (finalPosition.Y - mouseLocation.Y)
-    
-    local smoothness = Settings.Aimbot.Smoothness
-    local moveX = aimDeltaX * smoothness
-    local moveY = aimDeltaY * smoothness
-    
-    if finalPosition.Z > 0 then
-        mousemoverel(moveX, moveY)
-    end
+    mousemoverel(targetPosition.X - mouseLocation.X, targetPosition.Y - mouseLocation.Y)
 end
 
 local function CreateESP(player)
@@ -139,22 +123,16 @@ end
 local function GetClosestPlayerToMouse()
     local closestPlayer = nil
     local shortestDistance = math.huge
-    local mousePosition = UserInputService:GetMouseLocation()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 
     if targetPlayer and isRightMouseDown then
         if targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
-            if targetPlayer ~= localPlayer then
-                return targetPlayer
-            end
+            return targetPlayer
         end
     end
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild(AimSettings.TargetPart) then
-            if Settings.Aimbot.TeamCheck and player.Team == localPlayer.Team then
-                continue
-            end
-            
             local targetPart = player.Character[AimSettings.TargetPart]
             local targetPosition, onScreen = camera:WorldToViewportPoint(targetPart.Position)
             
@@ -165,7 +143,7 @@ local function GetClosestPlayerToMouse()
 
             if onScreen then
                 local screenPosition = Vector2.new(targetPosition.X, targetPosition.Y)
-                local distance = (screenPosition - mousePosition).Magnitude
+                local distance = (screenPosition - screenCenter).Magnitude
 
                 if distance <= Settings.Aimbot.FOV and distance < shortestDistance then
                     closestPlayer = player
@@ -183,10 +161,6 @@ local function UpdateESP()
     
     for player, esp in pairs(Settings.ESP.Players) do
         if player.Character and player ~= localPlayer then
-            if Settings.ESP.TeamCheck and player.Team == localPlayer.Team then
-                continue
-            end
-            
             local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
             local humanoid = player.Character:FindFirstChild("Humanoid")
             
@@ -235,23 +209,64 @@ local function UpdateESP()
     end
 end
 
+local function lockCameraToHead()
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
+        local targetPart = targetPlayer.Character[AimSettings.TargetPart]
+        local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
+        if targetPosition.Z > 0 then
+            local cameraPosition = camera.CFrame.Position
+            camera.CFrame = CFrame.new(cameraPosition, targetPart.Position)
+        end
+    end
+end
+
 local function cleanup()
+    -- Turn off all toggles
+    for toggle in pairs(Toggles) do
+        Toggles[toggle] = false
+    end
+    
+    -- Remove FOV Circle
     FOVCircle:Remove()
     
+    -- Clean up all ESP elements
     for _, esp in pairs(Settings.ESP.Players) do
         for _, drawing in pairs(esp) do
             drawing:Remove()
         end
     end
     
+    -- Clear ESP players table
     Settings.ESP.Players = {}
+    
+    -- Reset variables
     targetPlayer = nil
     isLeftMouseDown = false
     isRightMouseDown = false
+    
+    -- Disconnect auto click if exists
     if autoClickConnection then
         autoClickConnection:Disconnect()
     end
     
+    -- Disable all settings
+    Settings.ESP.Enabled = false
+    Settings.Aimbot.Enabled = false
+    
+    -- Remove all connections
+    for _, connection in pairs(getconnections(RunService.RenderStepped)) do
+        connection:Disable()
+    end
+    
+    for _, connection in pairs(getconnections(UserInputService.InputBegan)) do
+        connection:Disable()
+    end
+    
+    for _, connection in pairs(getconnections(UserInputService.InputEnded)) do
+        connection:Disable()
+    end
+    
+    -- Destroy the script
     script:Destroy()
 end
 
@@ -285,11 +300,6 @@ local toggleKeys = {
     end,
     [Enum.KeyCode.KeypadSeven] = function()
         Toggles.Health = not Toggles.Health
-    end,
-    [Enum.KeyCode.KeypadNine] = function()
-        Toggles.TeamCheck = not Toggles.TeamCheck
-        Settings.ESP.TeamCheck = Toggles.TeamCheck
-        Settings.Aimbot.TeamCheck = Toggles.TeamCheck
     end
 }
 
@@ -344,8 +354,10 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
     end
 end)
 
+FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
+    -- Keep FOV circle in center instead of following mouse
+    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
     
     UpdateESP()
@@ -357,7 +369,11 @@ RunService.RenderStepped:Connect(function()
         if targetPlayer and targetPlayer.Character then
             local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
             if targetPart then
-                perfectAim(targetPart)
+                if AimSettings.SilentAim then
+                    perfectAim(targetPart)
+                else
+                    lockCameraToHead()
+                end
             end
         end
     end
