@@ -67,10 +67,42 @@ FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
 local function perfectAim(targetPart)
-    local mouseLocation = UserInputService:GetMouseLocation()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
-    mousemoverel(targetPosition.X - mouseLocation.X, targetPosition.Y - mouseLocation.Y)
+    local targetVector = Vector2.new(targetPosition.X, targetPosition.Y)
+    
+    -- Calculate distance from center
+    local distanceFromCenter = (targetVector - screenCenter).Magnitude
+    
+    -- Only move mouse if target isn't centered (with small threshold)
+    if distanceFromCenter > 5 then
+        mousemoverel(targetPosition.X - screenCenter.X, targetPosition.Y - screenCenter.Y)
+    end
 end
+
+-- Update the RenderStepped connection
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
+    
+    UpdateESP()
+    
+    if Settings.Aimbot.Enabled and Toggles.Aimbot and isRightMouseDown then
+        if not targetPlayer then
+            targetPlayer = GetClosestPlayerToMouse()
+        end
+        if targetPlayer and targetPlayer.Character then
+            local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
+            if targetPart then
+                if AimSettings.SilentAim then
+                    perfectAim(targetPart)
+                else
+                    lockCameraToHead()
+                end
+            end
+        end
+    end
+end)
 
 local function CreateESP(player)
     local esp = {
@@ -356,7 +388,6 @@ end)
 
 FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 RunService.RenderStepped:Connect(function()
-    -- Keep FOV circle in center instead of following mouse
     FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
     
