@@ -67,9 +67,15 @@ FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
 local function perfectAim(targetPart)
-    local mouseLocation = UserInputService:GetMouseLocation()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
-    mousemoverel(targetPosition.X - mouseLocation.X, targetPosition.Y - mouseLocation.Y)
+    local targetVector = Vector2.new(targetPosition.X, targetPosition.Y)
+    
+    local distanceFromCenter = (targetVector - screenCenter).Magnitude
+    
+    if distanceFromCenter > 5 then
+        mousemoverel(targetPosition.X - screenCenter.X, targetPosition.Y - screenCenter.Y)
+    end
 end
 
 local function CreateESP(player)
@@ -119,11 +125,10 @@ local function CreateESP(player)
     
     Settings.ESP.Players[player] = esp
 end
-
 local function GetClosestPlayerToMouse()
     local closestPlayer = nil
     local shortestDistance = math.huge
-    local mousePosition = UserInputService:GetMouseLocation()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 
     if targetPlayer and isRightMouseDown then
         if targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
@@ -143,7 +148,7 @@ local function GetClosestPlayerToMouse()
 
             if onScreen then
                 local screenPosition = Vector2.new(targetPosition.X, targetPosition.Y)
-                local distance = (screenPosition - mousePosition).Magnitude
+                local distance = (screenPosition - screenCenter).Magnitude
 
                 if distance <= Settings.Aimbot.FOV and distance < shortestDistance then
                     closestPlayer = player
@@ -221,6 +226,10 @@ local function lockCameraToHead()
 end
 
 local function cleanup()
+    for toggle in pairs(Toggles) do
+        Toggles[toggle] = false
+    end
+    
     FOVCircle:Remove()
     
     for _, esp in pairs(Settings.ESP.Players) do
@@ -230,11 +239,28 @@ local function cleanup()
     end
     
     Settings.ESP.Players = {}
+    
     targetPlayer = nil
     isLeftMouseDown = false
     isRightMouseDown = false
+    
     if autoClickConnection then
         autoClickConnection:Disconnect()
+    end
+    
+    Settings.ESP.Enabled = false
+    Settings.Aimbot.Enabled = false
+    
+    for _, connection in pairs(getconnections(RunService.RenderStepped)) do
+        connection:Disable()
+    end
+    
+    for _, connection in pairs(getconnections(UserInputService.InputBegan)) do
+        connection:Disable()
+    end
+    
+    for _, connection in pairs(getconnections(UserInputService.InputEnded)) do
+        connection:Disable()
     end
     
     script:Destroy()
@@ -324,8 +350,9 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
     end
 end)
 
+FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
     
     UpdateESP()
