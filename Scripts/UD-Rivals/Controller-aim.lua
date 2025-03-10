@@ -4,6 +4,23 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 
+-- Epic animated notification sequence
+spawn(function()
+    local function createNotification(title, text, duration)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration,
+            Icon = "rbxassetid://13647654264"
+        })
+        wait(duration)
+    end
+
+    -- Cool notification sequence
+    createNotification("Syfer-eng's Rival Enhanced", "Features Loaded!", 2)
+    createNotification("💫 Ready!", "Press INSERT to toggle UI and End to close it", 3)
+end)
+
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local targetPlayer = nil
@@ -694,7 +711,7 @@ end)
 SetupUIInteractions()
 
 -- Initialize UI with animation
-MainFrame.Position = UDim2.new(0.8, 0, 1.5, 0)
+MainFrame.Position = UDim2.new(0.5, -150, 1.5, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Bounce), {
-    Position = UDim2.new(0.8, 0, 0.5, 0)
+    Position = UDim2.new(0.5, -150, 0.5, -200)
 }):Play()
