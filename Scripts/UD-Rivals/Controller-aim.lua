@@ -354,11 +354,7 @@ CreateUIListLayout(ESPPage)
 -- Create Toggles for Both Pages
 local AimbotToggles = {
     {name = "Enabled", setting = "Enabled"},
-    {name = "Silent Aim", setting = "SilentAim"},
-    {name = "Team Check", setting = "TeamCheck"},
-    {name = "Show FOV", setting = "ShowFOV"},
-    {name = "Auto Prediction", setting = "AutoPrediction"},
-    {name = "Trigger Bot", setting = "TriggerBot"}
+    {name = "Team Check", setting = "TeamCheck"}
 }
 
 local ESPToggles = {
