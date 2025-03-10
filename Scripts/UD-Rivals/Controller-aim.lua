@@ -355,8 +355,7 @@ CreateUIListLayout(ESPPage)
 local AimbotToggles = {
     {name = "Enabled", setting = "Enabled"},
     {name = "Team Check", setting = "TeamCheck"},
-    {name = "Show FOV", setting = "ShowFOV"},
-    {name = "Auto Prediction", setting = "AutoPrediction"}
+    {name = "Show FOV", setting = "ShowFOV"}
 }
 
 local ESPToggles = {
