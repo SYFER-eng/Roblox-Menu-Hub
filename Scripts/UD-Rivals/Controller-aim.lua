@@ -287,7 +287,6 @@ FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
--- Enhanced Perfect Aim Function
 local function perfectAim(targetPart)
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
