@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local targetPlayer = nil
@@ -56,6 +55,58 @@ local Settings = {
     }
 }
 
+-- Create UI
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local TabButtons = Instance.new("Frame")
+local AimbotTab = Instance.new("TextButton")
+local ESPTab = Instance.new("TextButton")
+local TabContainer = Instance.new("Frame")
+local AimbotPage = Instance.new("ScrollingFrame")
+local ESPPage = Instance.new("ScrollingFrame")
+
+ScreenGui.Name = "RivalsGUI"
+ScreenGui.Parent = CoreGui
+
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 350)
+MainFrame.Position = UDim2.new(0.8, 0, 0.5, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Parent = ScreenGui
+MainFrame.Active = true
+MainFrame.Draggable = true
+-- Continue UI Setup
+TabButtons.Name = "TabButtons"
+TabButtons.Size = UDim2.new(1, 0, 0, 40)
+TabButtons.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabButtons.Parent = MainFrame
+
+AimbotTab.Name = "AimbotTab"
+AimbotTab.Size = UDim2.new(0.5, 0, 1, 0)
+AimbotTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AimbotTab.Text = "Aimbot"
+AimbotTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimbotTab.Font = Enum.Font.GothamBold
+AimbotTab.TextSize = 14
+AimbotTab.Parent = TabButtons
+
+ESPTab.Name = "ESPTab"
+ESPTab.Size = UDim2.new(0.5, 0, 1, 0)
+ESPTab.Position = UDim2.new(0.5, 0, 0, 0)
+ESPTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ESPTab.Text = "ESP"
+ESPTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPTab.Font = Enum.Font.GothamBold
+ESPTab.TextSize = 14
+ESPTab.Parent = TabButtons
+
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, 0, 1, -40)
+TabContainer.Position = UDim2.new(0, 0, 0, 40)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = MainFrame
+
+-- Create FOV Circle
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 1.5
 FOVCircle.NumSides = 60
@@ -66,44 +117,20 @@ FOVCircle.ZIndex = 999
 FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 
+-- Perfect Aim Function
 local function perfectAim(targetPart)
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
     local targetVector = Vector2.new(targetPosition.X, targetPosition.Y)
     
-    -- Calculate distance from center
     local distanceFromCenter = (targetVector - screenCenter).Magnitude
     
-    -- Only move mouse if target isn't centered (with small threshold)
     if distanceFromCenter > 5 then
         mousemoverel(targetPosition.X - screenCenter.X, targetPosition.Y - screenCenter.Y)
     end
 end
 
--- Update the RenderStepped connection
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
-    
-    UpdateESP()
-    
-    if Settings.Aimbot.Enabled and Toggles.Aimbot and isRightMouseDown then
-        if not targetPlayer then
-            targetPlayer = GetClosestPlayerToMouse()
-        end
-        if targetPlayer and targetPlayer.Character then
-            local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
-            if targetPart then
-                if AimSettings.SilentAim then
-                    perfectAim(targetPart)
-                else
-                    lockCameraToHead()
-                end
-            end
-        end
-    end
-end)
-
+-- Create ESP Function
 local function CreateESP(player)
     local esp = {
         Box = Drawing.new("Square"),
@@ -151,7 +178,7 @@ local function CreateESP(player)
     
     Settings.ESP.Players[player] = esp
 end
-
+-- Get Closest Player Function
 local function GetClosestPlayerToMouse()
     local closestPlayer = nil
     local shortestDistance = math.huge
@@ -188,6 +215,7 @@ local function GetClosestPlayerToMouse()
     return closestPlayer
 end
 
+-- Update ESP Function
 local function UpdateESP()
     if not Toggles.ESP then return end
     
@@ -240,7 +268,7 @@ local function UpdateESP()
         end
     end
 end
-
+-- Lock Camera Function
 local function lockCameraToHead()
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
         local targetPart = targetPlayer.Character[AimSettings.TargetPart]
@@ -252,89 +280,151 @@ local function lockCameraToHead()
     end
 end
 
+-- Create Toggle Button Function
+local function CreateToggle(parent, name, category, setting)
+    local ToggleFrame = Instance.new("Frame")
+    local ToggleButton = Instance.new("TextButton")
+    local ToggleStatus = Instance.new("Frame")
+    
+    ToggleFrame.Name = name .. "Toggle"
+    ToggleFrame.Size = UDim2.new(0.9, 0, 0, 35)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    ToggleFrame.Parent = parent
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = ToggleFrame
+    
+    ToggleButton.Name = "Button"
+    ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+    ToggleButton.BackgroundTransparency = 1
+    ToggleButton.Text = name
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 14
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.Parent = ToggleFrame
+    
+    ToggleStatus.Name = "Status"
+    ToggleStatus.Size = UDim2.new(0, 20, 0, 20)
+    ToggleStatus.Position = UDim2.new(0.9, 0, 0.5, 0)
+    ToggleStatus.AnchorPoint = Vector2.new(0, 0.5)
+    ToggleStatus.BackgroundColor3 = Settings[category][setting] and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+    ToggleStatus.Parent = ToggleFrame
+    
+    local StatusCorner = Instance.new("UICorner")
+    StatusCorner.CornerRadius = UDim.new(1, 0)
+    StatusCorner.Parent = ToggleStatus
+    
+    ToggleButton.MouseButton1Click:Connect(function()
+        Settings[category][setting] = not Settings[category][setting]
+        Toggles[name] = Settings[category][setting]
+        ToggleStatus.BackgroundColor3 = Settings[category][setting] and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+    end)
+    
+    return ToggleFrame
+end
+
+-- Setup Pages
+AimbotPage.Name = "AimbotPage"
+AimbotPage.Size = UDim2.new(1, 0, 1, 0)
+AimbotPage.BackgroundTransparency = 1
+AimbotPage.ScrollBarThickness = 2
+AimbotPage.Visible = true
+AimbotPage.Parent = TabContainer
+
+ESPPage.Name = "ESPPage"
+ESPPage.Size = UDim2.new(1, 0, 1, 0)
+ESPPage.BackgroundTransparency = 1
+ESPPage.ScrollBarThickness = 2
+ESPPage.Visible = false
+ESPPage.Parent = TabContainer
+
+-- Create UIListLayout for both pages
+local function CreateUIListLayout(parent)
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = parent
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 5)
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    return UIListLayout
+end
+
+CreateUIListLayout(AimbotPage)
+CreateUIListLayout(ESPPage)
+-- Create Toggles for Both Pages
+local AimbotToggles = {
+    {name = "Enabled", setting = "Enabled"},
+    {name = "Silent Aim", setting = "SilentAim"},
+    {name = "Team Check", setting = "TeamCheck"},
+    {name = "Show FOV", setting = "ShowFOV"},
+    {name = "Auto Prediction", setting = "AutoPrediction"},
+    {name = "Trigger Bot", setting = "TriggerBot"}
+}
+
+local ESPToggles = {
+    {name = "Enabled", setting = "Enabled"},
+    {name = "Boxes", setting = "Boxes"},
+    {name = "Names", setting = "Names"},
+    {name = "Distance", setting = "Distance"},
+    {name = "Snaplines", setting = "Snaplines"},
+    {name = "Health", setting = "Health"},
+    {name = "Team Check", setting = "TeamCheck"},
+    {name = "Rainbow", setting = "Rainbow"}
+}
+
+for _, toggle in ipairs(AimbotToggles) do
+    CreateToggle(AimbotPage, toggle.name, "Aimbot", toggle.setting)
+end
+
+for _, toggle in ipairs(ESPToggles) do
+    CreateToggle(ESPPage, toggle.name, "ESP", toggle.setting)
+end
+
+-- Tab Switching Logic
+AimbotTab.MouseButton1Click:Connect(function()
+    AimbotTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ESPTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    AimbotPage.Visible = true
+    ESPPage.Visible = false
+end)
+
+ESPTab.MouseButton1Click:Connect(function()
+    ESPTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    AimbotTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    ESPPage.Visible = true
+    AimbotPage.Visible = false
+end)
+
+-- Cleanup Function
 local function cleanup()
-    -- Turn off all toggles
     for toggle in pairs(Toggles) do
         Toggles[toggle] = false
     end
     
-    -- Remove FOV Circle
     FOVCircle:Remove()
     
-    -- Clean up all ESP elements
     for _, esp in pairs(Settings.ESP.Players) do
         for _, drawing in pairs(esp) do
             drawing:Remove()
         end
     end
     
-    -- Clear ESP players table
     Settings.ESP.Players = {}
     
-    -- Reset variables
     targetPlayer = nil
     isLeftMouseDown = false
     isRightMouseDown = false
     
-    -- Disconnect auto click if exists
     if autoClickConnection then
         autoClickConnection:Disconnect()
     end
     
-    -- Disable all settings
     Settings.ESP.Enabled = false
     Settings.Aimbot.Enabled = false
     
-    -- Remove all connections
-    for _, connection in pairs(getconnections(RunService.RenderStepped)) do
-        connection:Disable()
-    end
-    
-    for _, connection in pairs(getconnections(UserInputService.InputBegan)) do
-        connection:Disable()
-    end
-    
-    for _, connection in pairs(getconnections(UserInputService.InputEnded)) do
-        connection:Disable()
-    end
-    
-    -- Destroy the script
-    script:Destroy()
+    ScreenGui:Destroy()
 end
-
-local toggleKeys = {
-    [Enum.KeyCode.KeypadOne] = function()
-        Toggles.ESP = not Toggles.ESP
-        for _, esp in pairs(Settings.ESP.Players) do
-            esp.Box.Visible = false
-            esp.Name.Visible = false
-            esp.Distance.Visible = false
-            esp.Snapline.Visible = false
-            esp.HealthBar.Visible = false
-            esp.HealthBarBackground.Visible = false
-        end
-    end,
-    [Enum.KeyCode.KeypadTwo] = function()
-        Toggles.Aimbot = not Toggles.Aimbot
-        FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
-    end,
-    [Enum.KeyCode.KeypadThree] = function()
-        Toggles.Boxes = not Toggles.Boxes
-    end,
-    [Enum.KeyCode.KeypadFour] = function()
-        Toggles.Names = not Toggles.Names
-    end,
-    [Enum.KeyCode.KeypadFive] = function()
-        Toggles.Distance = not Toggles.Distance
-    end,
-    [Enum.KeyCode.KeypadSix] = function()
-        Toggles.Snaplines = not Toggles.Snaplines
-    end,
-    [Enum.KeyCode.KeypadSeven] = function()
-        Toggles.Health = not Toggles.Health
-    end
-}
-
+-- Event Connections
 for _, player in pairs(Players:GetPlayers()) do
     if player ~= localPlayer then
         CreateESP(player)
@@ -368,10 +458,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         end
     elseif input.KeyCode == Enum.KeyCode.End then
         cleanup()
-    end
-    
-    if toggleKeys[input.KeyCode] then
-        toggleKeys[input.KeyCode]()
+    elseif input.KeyCode == Enum.KeyCode.RightControl then
+        ScreenGui.Enabled = not ScreenGui.Enabled
     end
 end)
 
@@ -386,14 +474,14 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
     end
 end)
 
-FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+-- Main Loop
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
+    FOVCircle.Visible = Settings.Aimbot.ShowFOV and Settings.Aimbot.Enabled
     
     UpdateESP()
     
-    if Settings.Aimbot.Enabled and Toggles.Aimbot and isRightMouseDown then
+    if Settings.Aimbot.Enabled and isRightMouseDown then
         if not targetPlayer then
             targetPlayer = GetClosestPlayerToMouse()
         end
