@@ -691,6 +691,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+SetupUIInteractions()
+
 -- Initialize UI with animation
 MainFrame.Position = UDim2.new(0.8, 0, 1.5, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Bounce), {
