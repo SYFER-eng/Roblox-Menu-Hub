@@ -279,10 +279,7 @@ local function perfectAim(targetPart)
     local distanceFromCenter = (targetVector - screenCenter).Magnitude
     
     if distanceFromCenter > 5 then
-        mousemoverel(
-            (targetPosition.X - screenCenter.X) * Settings.Aimbot.Smoothness,
-            (targetPosition.Y - screenCenter.Y) * Settings.Aimbot.Smoothness
-        )
+        mousemoverel(targetPosition.X - screenCenter.X, targetPosition.Y - screenCenter.Y)
     end
 end
 
@@ -458,6 +455,17 @@ local function UpdateESP()
         end
     end
 end
+
+local function lockCameraToHead()
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(AimSettings.TargetPart) then
+        local targetPart = targetPlayer.Character[AimSettings.TargetPart]
+        local targetPosition = camera:WorldToViewportPoint(targetPart.Position)
+        if targetPosition.Z > 0 then
+            local cameraPosition = camera.CFrame.Position
+            camera.CFrame = CFrame.new(cameraPosition, targetPart.Position)
+        end
+    end
+end
 -- Enhanced UI Interaction Setup
 local function SetupUIInteractions()
     -- Tab Switching with Animation
@@ -538,10 +546,7 @@ end
 local AimbotToggles = {
     {name = "Enabled", setting = "Enabled"},
     {name = "Team Check", setting = "TeamCheck"},
-    {name = "Show FOV", setting = "ShowFOV"},
-    {name = "Auto Prediction", setting = "AutoPrediction"},
-    {name = "Silent Aim", setting = "SilentAim"},
-    {name = "Trigger Bot", setting = "TriggerBot"}
+    {name = "Show FOV", setting = "ShowFOV"}
 }
 
 local ESPToggles = {
@@ -632,34 +637,50 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Setup UI Interactions
-SetupUIInteractions()
-
--- Main Loop with Enhanced Performance
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    FOVCircle.Visible = Settings.Aimbot.ShowFOV and Settings.Aimbot.Enabled
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     
-    -- Update ESP with performance checks
-    if Toggles.ESP and tick() % (1/60) < (1/60) then
-        UpdateESP()
-    end
-    
-    -- Aimbot Logic
-    if Settings.Aimbot.Enabled and isRightMouseDown then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isLeftMouseDown = true
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isRightMouseDown = true
         if not targetPlayer then
             targetPlayer = GetClosestPlayerToMouse()
         end
-        
+    elseif input.KeyCode == Enum.KeyCode.End then
+        cleanup()
+    end
+    
+    if toggleKeys[input.KeyCode] then
+        toggleKeys[input.KeyCode]()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isLeftMouseDown = false
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isRightMouseDown = false
+        targetPlayer = nil
+    end
+end)
+
+FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    FOVCircle.Visible = Toggles.Aimbot and Settings.Aimbot.ShowFOV
+    
+    UpdateESP()
+    
+    if Settings.Aimbot.Enabled and Toggles.Aimbot and isRightMouseDown then
+        if not targetPlayer then
+            targetPlayer = GetClosestPlayerToMouse()
+        end
         if targetPlayer and targetPlayer.Character then
             local targetPart = targetPlayer.Character:FindFirstChild(AimSettings.TargetPart)
             if targetPart then
-                if Settings.Aimbot.AutoPrediction then
-                    -- Enhanced prediction based on distance
-                    local distance = (targetPart.Position - camera.CFrame.Position).Magnitude
-                    Settings.Aimbot.PredictionMultiplier = math.clamp(distance / 100, 1, 2.5)
-                end
-                
                 if AimSettings.SilentAim then
                     perfectAim(targetPart)
                 else
