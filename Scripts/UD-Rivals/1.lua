@@ -1,3 +1,4 @@
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -15,12 +16,11 @@ spawn(function()
         })
         wait(duration)
     end
-
-    -- Cool notification sequence
     createNotification("Syfer-eng's Rival Enhanced", "Features Loaded!", 2)
     createNotification("💫 Ready!", "Press INSERT to toggle UI and End to close it", 3)
 end)
 
+-- Variables
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local targetPlayer = nil
@@ -72,6 +72,9 @@ local Settings = {
         TriggerBot = false,
         TriggerDelay = 0.1,
         MaxDistance = 250
+    },
+    Misc = {
+        NoClip = false
     }
 }
 
@@ -536,8 +539,13 @@ local function SetupUIInteractions()
     end)
 
     -- Toggle GUI with Insert Key
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.P then
+        Settings.Misc.NoClip = not Settings.Misc.NoClip
+        createNotification("NoClip", "NoClip is now " .. (Settings.Misc.NoClip and "Enabled" or "Disabled"), 2)
+    end
         
         if input.KeyCode == Enum.KeyCode.Insert then
             -- Animate GUI visibility
@@ -708,6 +716,26 @@ RunService.RenderStepped:Connect(function()
 end)
 
 SetupUIInteractions()
+
+-- Add No Clip functionality
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.P then
+        NoClipEnabled = not NoClipEnabled
+        createNotification("NoClip", "NoClip is now " .. (NoClipEnabled and "Enabled" or "Disabled"), 2)
+    end
+end)
+
+game:GetService('RunService').Stepped:Connect(function()
+    if NoClipEnabled and localPlayer.Character then
+        for i,v in pairs(localPlayer.Character:GetDescendants()) do
+            if v:IsA('BasePart') then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
 
 -- Initialize UI with animation
 MainFrame.Position = UDim2.new(0.5, -150, 1.5, 0)
