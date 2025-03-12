@@ -543,8 +543,25 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.P then
-        Settings.Misc.NoClip = not Settings.Misc.NoClip
-        createNotification("NoClip", "NoClip is now " .. (Settings.Misc.NoClip and "Enabled" or "Disabled"), 2)
+        NoClipEnabled = not NoClipEnabled
+        createNotification("NoClip", "NoClip is now " .. (NoClipEnabled and "Enabled" or "Disabled"), 2)
+    end
+end)
+
+-- Update the NoClip loop
+RunService.Stepped:Connect(function()
+    if NoClipEnabled and localPlayer.Character then
+        for _, part in pairs(localPlayer.Character:GetDescendants()) do
+            if part:IsA('BasePart') then
+                part.CanCollide = false
+            end
+        end
+    elseif not NoClipEnabled and localPlayer.Character then
+        for _, part in pairs(localPlayer.Character:GetDescendants()) do
+            if part:IsA('BasePart') and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
+        end
     end
         
         if input.KeyCode == Enum.KeyCode.Insert then
@@ -728,8 +745,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 game:GetService('RunService').Stepped:Connect(function()
-    if NoClipEnabled and localPlayer.Character then
-        for i,v in pairs(localPlayer.Character:GetDescendants()) do
+    if Settings.Misc.NoClip and localPlayer.Character then
+        for _, v in pairs(localPlayer.Character:GetDescendants()) do
             if v:IsA('BasePart') then
                 v.CanCollide = false
             end
