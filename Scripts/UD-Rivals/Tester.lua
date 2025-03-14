@@ -158,20 +158,11 @@ TabContainer.Parent = MainFrame
 -- Create Tabs
 local AimbotTab = Instance.new("TextButton")
 local ESPTab = Instance.new("TextButton")
+local MiscTab = Instance.new("TextButton")
 
--- Enhanced Dragging Functionality
-local dragging, dragInput, dragStart, startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    
-    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    TweenService:Create(MainFrame, tweenInfo, {Position = targetPos}):Play()
-end
 -- Setup Tab Buttons
 AimbotTab.Name = "AimbotTab"
-AimbotTab.Size = UDim2.new(0.5, -5, 1, -10)
+AimbotTab.Size = UDim2.new(0.33, -5, 1, -10)
 AimbotTab.Position = UDim2.new(0, 5, 0, 5)
 AimbotTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 AimbotTab.Text = "Aimbot"
@@ -182,8 +173,8 @@ AimbotTab.Parent = TabButtons
 AimbotTab.AutoButtonColor = false
 
 ESPTab.Name = "ESPTab"
-ESPTab.Size = UDim2.new(0.5, -5, 1, -10)
-ESPTab.Position = UDim2.new(0.5, 0, 0, 5)
+ESPTab.Size = UDim2.new(0.33, -5, 1, -10)
+ESPTab.Position = UDim2.new(0.33, 5, 0, 5)
 ESPTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ESPTab.Text = "ESP"
 ESPTab.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -191,6 +182,17 @@ ESPTab.Font = Enum.Font.GothamBold
 ESPTab.TextSize = 14
 ESPTab.Parent = TabButtons
 ESPTab.AutoButtonColor = false
+
+MiscTab.Name = "MiscTab"
+MiscTab.Size = UDim2.new(0.33, -5, 1, -10)
+MiscTab.Position = UDim2.new(0.66, 5, 0, 5)
+MiscTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MiscTab.Text = "Misc"
+MiscTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+MiscTab.Font = Enum.Font.GothamBold
+MiscTab.TextSize = 14
+MiscTab.Parent = TabButtons
+MiscTab.AutoButtonColor = false
 
 -- Add Corner Radius to Tabs
 local function AddCorners(button)
@@ -201,6 +203,7 @@ end
 
 AddCorners(AimbotTab)
 AddCorners(ESPTab)
+AddCorners(MiscTab)
 
 -- Create Pages
 local AimbotPage = Instance.new("ScrollingFrame")
@@ -222,6 +225,16 @@ ESPPage.ScrollBarThickness = 2
 ESPPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 ESPPage.Visible = false
 ESPPage.Parent = TabContainer
+
+local MiscPage = Instance.new("ScrollingFrame")
+MiscPage.Name = "MiscPage"
+MiscPage.Size = UDim2.new(1, -20, 1, -10)
+MiscPage.Position = UDim2.new(0, 10, 0, 5)
+MiscPage.BackgroundTransparency = 1
+MiscPage.ScrollBarThickness = 2
+MiscPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+MiscPage.Visible = false
+MiscPage.Parent = TabContainer
 
 -- Create Enhanced Toggle Button Function
 local function CreateToggle(parent, name, category, setting)
