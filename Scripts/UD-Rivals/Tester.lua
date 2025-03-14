@@ -43,7 +43,8 @@ local Toggles = {
     Names = true,
     Distance = true,
     Snaplines = true,
-    Health = true
+    Health = true,
+    NoClip = false
 }
 
 local Settings = {
