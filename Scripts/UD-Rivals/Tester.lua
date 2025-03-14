@@ -235,6 +235,18 @@ ESPPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 ESPPage.Visible = false
 ESPPage.Parent = TabContainer
 
+local MiscPage = Instance.new("ScrollingFrame")
+MiscPage.Name = "MiscPage"
+MiscPage.Size = UDim2.new(1, -20, 1, -10)
+MiscPage.Position = UDim2.new(0, 10, 0, 5)
+MiscPage.BackgroundTransparency = 1
+MiscPage.ScrollBarThickness = 2
+MiscPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+MiscPage.Visible = false
+MiscPage.Parent = TabContainer
+
+CreateUIListLayout(MiscPage)
+
 -- Create Enhanced Toggle Button Function
 local function CreateToggle(parent, name, category, setting)
     local ToggleFrame = Instance.new("Frame")
@@ -515,6 +527,7 @@ local function SetupUIInteractions()
         -- Switch pages
         AimbotPage.Visible = showAimbot
         ESPPage.Visible = not showAimbot
+        MiscPage.Visible = (tab == MiscTab)
     end
 
     AimbotTab.MouseButton1Click:Connect(function()
@@ -524,6 +537,10 @@ local function SetupUIInteractions()
     ESPTab.MouseButton1Click:Connect(function()
         SwitchTab(false)
     end)
+
+    MiscTab.MouseButton1Click:Connect(function()
+    SwitchTab(MiscTab)
+end)
 
     -- Enhanced Dragging
     MainFrame.InputBegan:Connect(function(input)
