@@ -271,7 +271,6 @@ local function CreateToggle(parent, name, category, setting)
     StatusCorner.CornerRadius = UDim.new(1, 0)
     StatusCorner.Parent = ToggleStatus
     
-    -- Add hover effect
     local hovering = false
     
     ToggleButton.MouseEnter:Connect(function()
@@ -420,6 +419,7 @@ local function GetClosestPlayerToMouse()
 
     return closestPlayer
 end
+
 -- Enhanced Update ESP Function
 local function UpdateESP()
     if not Toggles.ESP then return end
