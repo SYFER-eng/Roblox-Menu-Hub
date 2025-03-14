@@ -212,6 +212,7 @@ end
 
 AddCorners(AimbotTab)
 AddCorners(ESPTab)
+AddCorners(MiscTab)
 
 -- Create Pages
 local AimbotPage = Instance.new("ScrollingFrame")
