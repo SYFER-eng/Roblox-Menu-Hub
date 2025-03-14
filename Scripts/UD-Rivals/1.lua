@@ -27,6 +27,7 @@ local targetPlayer = nil
 local isLeftMouseDown = false 
 local isRightMouseDown = false
 local autoClickConnection = nil
+local noClipEnabled = false
 
 -- Settings
 local AimSettings = {
@@ -722,16 +723,26 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.P then
-        NoClipEnabled = not NoClipEnabled
-        createNotification("NoClip", "NoClip is now " .. (NoClipEnabled and "Enabled" or "Disabled"), 2)
+        noClipEnabled = not noClipEnabled
+        Settings.Misc.NoClip = noClipEnabled
+        createNotification("NoClip", "NoClip is now " .. (noClipEnabled and "Enabled" or "Disabled"), 2)
     end
 end)
 
+-- Update the NoClip execution
 game:GetService('RunService').Stepped:Connect(function()
-    if NoClipEnabled and localPlayer.Character then
-        for i,v in pairs(localPlayer.Character:GetDescendants()) do
-            if v:IsA('BasePart') then
-                v.CanCollide = false
+    if noClipEnabled and localPlayer.Character then
+        for _, part in pairs(localPlayer.Character:GetDescendants()) do
+            if part:IsA('BasePart') then
+                part.CanCollide = false
+            end
+        end
+    else
+        if localPlayer.Character then
+            for _, part in pairs(localPlayer.Character:GetDescendants()) do
+                if part:IsA('BasePart') then
+                    part.CanCollide = true
+                end
             end
         end
     end
