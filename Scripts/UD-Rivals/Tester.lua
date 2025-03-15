@@ -31,46 +31,45 @@ local noClipEnabled = false
 
 -- Settings
 local AimSettings = {
-    SilentAim = true,
+    SilentAim = false,
     HitChance = 100,
     TargetPart = "Head"
 }
 
 local Toggles = {
-    ESP = true,
-    Aimbot = true,
-    Boxes = true,
-    Names = true,
-    Distance = true,
-    Snaplines = true,
-    Health = true,
-    NoClip = false
+    ESP = false,
+    Aimbot = false,
+    Boxes = false,
+    Names = false,
+    Distance = false,
+    Snaplines = false,
+    Health = false
 }
 
 local Settings = {
     ESP = {
-        Enabled = true,
-        Boxes = true,
-        Names = true,
-        Distance = true,
-        Health = true,
-        Snaplines = true,
+        Enabled = false,
+        Boxes = false,
+        Names = false,
+        Distance = false,
+        Health = false,
+        Snaplines = false,
         TeamCheck = false,
-        Rainbow = true,
+        Rainbow = false,
         BoxColor = Color3.fromRGB(255, 0, 255),
         Players = {},
         MaxDistance = 1000,
         HealthBarSize = Vector2.new(2, 20)
     },
     Aimbot = {
-        Enabled = true,
+        Enabled = false,
         TeamCheck = false,
         Smoothness = 0.2,
         FOV = 150,
         TargetPart = "Head",
-        ShowFOV = true,
+        ShowFOV = false,
         PredictionMultiplier = 1.5,
-        AutoPrediction = true,
+        AutoPrediction = false,
         TriggerBot = false,
         TriggerDelay = 0.1,
         MaxDistance = 250
@@ -88,8 +87,8 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 500, 0, 400) -- Wider UI
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200) -- Adjusted position for wider UI
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -104,7 +103,7 @@ UIGradient.Rotation = 45
 UIGradient.Parent = MainFrame
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.CornerRadius = UDim.new(0, 10) -- Slightly larger corner radius
 UICorner.Parent = MainFrame
 
 local DropShadow = Instance.new("ImageLabel")
@@ -117,13 +116,21 @@ DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
 DropShadow.ImageTransparency = 0.5
 DropShadow.Parent = MainFrame
 
--- Create Title Bar
+-- Create Title Bar with accent color
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
-TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TitleBar.Size = UDim2.new(1, 0, 0, 40) -- Taller title bar
+TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
+
+local TitleAccent = Instance.new("Frame")
+TitleAccent.Name = "TitleAccent"
+TitleAccent.Size = UDim2.new(1, 0, 0, 2)
+TitleAccent.Position = UDim2.new(0, 0, 1, -2)
+TitleAccent.BackgroundColor3 = Color3.fromRGB(255, 0, 255) -- Accent color
+TitleAccent.BorderSizePixel = 0
+TitleAccent.Parent = TitleBar
 
 local TitleText = Instance.new("TextLabel")
 TitleText.Name = "Title"
@@ -131,146 +138,188 @@ TitleText.Size = UDim2.new(1, 0, 1, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "Rivals Enhanced"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleText.TextSize = 16
+TitleText.TextSize = 18 -- Larger text
 TitleText.Font = Enum.Font.GothamBold
 TitleText.Parent = TitleBar
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.CornerRadius = UDim.new(0, 10)
 TitleCorner.Parent = TitleBar
 
 -- Create Tab System
 local TabButtons = Instance.new("Frame")
 TabButtons.Name = "TabButtons"
-TabButtons.Size = UDim2.new(1, 0, 0, 40)
-TabButtons.Position = UDim2.new(0, 0, 0, 35)
+TabButtons.Size = UDim2.new(0.3, 0, 1, -50) -- Left sidebar for tabs
+TabButtons.Position = UDim2.new(0, 10, 0, 50)
 TabButtons.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TabButtons.BorderSizePixel = 0
 TabButtons.Parent = MainFrame
 
+local TabButtonsCorner = Instance.new("UICorner")
+TabButtonsCorner.CornerRadius = UDim.new(0, 8)
+TabButtonsCorner.Parent = TabButtons
+
 local TabContainer = Instance.new("Frame")
 TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, 0, 1, -80)
-TabContainer.Position = UDim2.new(0, 0, 0, 80)
+TabContainer.Size = UDim2.new(0.67, 0, 1, -60) -- Content area
+TabContainer.Position = UDim2.new(0.32, 0, 0, 50)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
 -- Create Tabs
 local AimbotTab = Instance.new("TextButton")
 local ESPTab = Instance.new("TextButton")
-local MiscTab = Instance.new("TextButton")
+local MiscTab = Instance.new("TextButton") -- Added Misc tab
 
--- Setup Tab Buttons
-AimbotTab.Name = "AimbotTab"
-AimbotTab.Size = UDim2.new(0.33, -5, 1, -10)
-AimbotTab.Position = UDim2.new(0, 5, 0, 5)
-AimbotTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-AimbotTab.Text = "Aimbot"
-AimbotTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotTab.Font = Enum.Font.GothamBold
-AimbotTab.TextSize = 14
-AimbotTab.Parent = TabButtons
-AimbotTab.AutoButtonColor = false
+-- Enhanced Dragging Functionality
+local dragging, dragInput, dragStart, startPos
 
-ESPTab.Name = "ESPTab"
-ESPTab.Size = UDim2.new(0.33, -5, 1, -10)
-ESPTab.Position = UDim2.new(0.33, 5, 0, 5)
-ESPTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ESPTab.Text = "ESP"
-ESPTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPTab.Font = Enum.Font.GothamBold
-ESPTab.TextSize = 14
-ESPTab.Parent = TabButtons
-ESPTab.AutoButtonColor = false
-
-MiscTab.Name = "MiscTab"
-MiscTab.Size = UDim2.new(0.33, -5, 1, -10)
-MiscTab.Position = UDim2.new(0.66, 5, 0, 5)
-MiscTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MiscTab.Text = "Misc"
-MiscTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiscTab.Font = Enum.Font.GothamBold
-MiscTab.TextSize = 14
-MiscTab.Parent = TabButtons
-MiscTab.AutoButtonColor = false
-
--- Add Corner Radius to Tabs
-local function AddCorners(button)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = button
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    TweenService:Create(MainFrame, tweenInfo, {Position = targetPos}):Play()
 end
 
-AddCorners(AimbotTab)
-AddCorners(ESPTab)
-AddCorners(MiscTab)
+-- Setup Tab Buttons with improved styling
+local function CreateTabButton(name, position)
+    local tab = Instance.new("TextButton")
+    tab.Name = name.."Tab"
+    tab.Size = UDim2.new(0.9, 0, 0, 40)
+    tab.Position = position
+    tab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    tab.Text = name
+    tab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tab.Font = Enum.Font.GothamBold
+    tab.TextSize = 16
+    tab.Parent = TabButtons
+    tab.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = tab
+    
+    local accent = Instance.new("Frame")
+    accent.Name = "Accent"
+    accent.Size = UDim2.new(0, 4, 1, -10)
+    accent.Position = UDim2.new(0, 0, 0, 5)
+    accent.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+    accent.BorderSizePixel = 0
+    accent.Visible = false
+    accent.Parent = tab
+    
+    local accentCorner = Instance.new("UICorner")
+    accentCorner.CornerRadius = UDim.new(0, 2)
+    accentCorner.Parent = accent
+    
+    return tab
+end
 
--- Create Pages
+AimbotTab = CreateTabButton("Aimbot", UDim2.new(0.05, 0, 0, 10))
+ESPTab = CreateTabButton("ESP", UDim2.new(0.05, 0, 0, 60))
+MiscTab = CreateTabButton("Misc", UDim2.new(0.05, 0, 0, 110))
+
+-- Set initial active tab
+AimbotTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AimbotTab.Accent.Visible = true
+
+-- Create Pages with improved styling
 local AimbotPage = Instance.new("ScrollingFrame")
 AimbotPage.Name = "AimbotPage"
-AimbotPage.Size = UDim2.new(1, -20, 1, -10)
-AimbotPage.Position = UDim2.new(0, 10, 0, 5)
+AimbotPage.Size = UDim2.new(1, -20, 1, -20)
+AimbotPage.Position = UDim2.new(0, 10, 0, 10)
 AimbotPage.BackgroundTransparency = 1
-AimbotPage.ScrollBarThickness = 2
-AimbotPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+AimbotPage.ScrollBarThickness = 4
+AimbotPage.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
 AimbotPage.Visible = true
 AimbotPage.Parent = TabContainer
+AimbotPage.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
 
 local ESPPage = Instance.new("ScrollingFrame")
 ESPPage.Name = "ESPPage"
-ESPPage.Size = UDim2.new(1, -20, 1, -10)
-ESPPage.Position = UDim2.new(0, 10, 0, 5)
+ESPPage.Size = UDim2.new(1, -20, 1, -20)
+ESPPage.Position = UDim2.new(0, 10, 0, 10)
 ESPPage.BackgroundTransparency = 1
-ESPPage.ScrollBarThickness = 2
-ESPPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+ESPPage.ScrollBarThickness = 4
+ESPPage.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
 ESPPage.Visible = false
 ESPPage.Parent = TabContainer
+ESPPage.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
 
 local MiscPage = Instance.new("ScrollingFrame")
 MiscPage.Name = "MiscPage"
-MiscPage.Size = UDim2.new(1, -20, 1, -10)
-MiscPage.Position = UDim2.new(0, 10, 0, 5)
+MiscPage.Size = UDim2.new(1, -20, 1, -20)
+MiscPage.Position = UDim2.new(0, 10, 0, 10)
 MiscPage.BackgroundTransparency = 1
-MiscPage.ScrollBarThickness = 2
-MiscPage.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+MiscPage.ScrollBarThickness = 4
+MiscPage.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 255)
 MiscPage.Visible = false
 MiscPage.Parent = TabContainer
+MiscPage.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
 
--- Create Enhanced Toggle Button Function
+-- Create Enhanced Toggle Button Function with modern design
 local function CreateToggle(parent, name, category, setting)
     local ToggleFrame = Instance.new("Frame")
     local ToggleButton = Instance.new("TextButton")
     local ToggleStatus = Instance.new("Frame")
+    local ToggleInner = Instance.new("Frame")
     
     ToggleFrame.Name = name .. "Toggle"
-    ToggleFrame.Size = UDim2.new(0.9, 0, 0, 40)
+    ToggleFrame.Size = UDim2.new(0.95, 0, 0, 50) -- Taller toggle
     ToggleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     ToggleFrame.Parent = parent
     
     local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.CornerRadius = UDim.new(0, 8)
     UICorner.Parent = ToggleFrame
     
     ToggleButton.Name = "Button"
     ToggleButton.Size = UDim2.new(1, 0, 1, 0)
     ToggleButton.BackgroundTransparency = 1
-    ToggleButton.Text = name
+    ToggleButton.Text = ""
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 14
+    ToggleButton.TextSize = 16
     ToggleButton.Font = Enum.Font.GothamBold
     ToggleButton.Parent = ToggleFrame
     
+    local ToggleLabel = Instance.new("TextLabel")
+    ToggleLabel.Name = "Label"
+    ToggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    ToggleLabel.Position = UDim2.new(0.05, 0, 0, 0)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.Text = name
+    ToggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleLabel.TextSize = 16
+    ToggleLabel.Font = Enum.Font.GothamSemibold
+    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    ToggleLabel.Parent = ToggleFrame
+    
     ToggleStatus.Name = "Status"
-    ToggleStatus.Size = UDim2.new(0, 24, 0, 24)
-    ToggleStatus.Position = UDim2.new(0.92, 0, 0.5, 0)
-    ToggleStatus.AnchorPoint = Vector2.new(0, 0.5)
-    ToggleStatus.BackgroundColor3 = Settings[category][setting] and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+    ToggleStatus.Size = UDim2.new(0, 50, 0, 24)
+    ToggleStatus.Position = UDim2.new(0.9, -25, 0.5, -12)
+    ToggleStatus.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     ToggleStatus.Parent = ToggleFrame
     
     local StatusCorner = Instance.new("UICorner")
     StatusCorner.CornerRadius = UDim.new(1, 0)
     StatusCorner.Parent = ToggleStatus
     
+    -- Initialize all toggles as OFF (red)
+    Settings[category][setting] = false
+    Toggles[name] = false
+    
+    ToggleInner.Name = "Inner"
+    ToggleInner.Size = UDim2.new(0, 20, 0, 20)
+    ToggleInner.Position = UDim2.new(0, 2, 0.5, -10) -- Left position (OFF)
+    ToggleInner.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Red color (OFF)
+    ToggleInner.Parent = ToggleStatus
+    
+    local InnerCorner = Instance.new("UICorner")
+    InnerCorner.CornerRadius = UDim.new(1, 0)
+    InnerCorner.Parent = ToggleInner
+    
+    -- Add hover effect
     local hovering = false
     
     ToggleButton.MouseEnter:Connect(function()
@@ -287,8 +336,13 @@ local function CreateToggle(parent, name, category, setting)
         Settings[category][setting] = not Settings[category][setting]
         Toggles[name] = Settings[category][setting]
         
+        local targetPosition = Settings[category][setting] and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
         local targetColor = Settings[category][setting] and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
-        TweenService:Create(ToggleStatus, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+        
+        TweenService:Create(ToggleInner, TweenInfo.new(0.2), {
+            Position = targetPosition,
+            BackgroundColor3 = targetColor
+        }):Play()
     end)
     
     return ToggleFrame
@@ -419,7 +473,6 @@ local function GetClosestPlayerToMouse()
 
     return closestPlayer
 end
-
 -- Enhanced Update ESP Function
 local function UpdateESP()
     if not Toggles.ESP then return end
