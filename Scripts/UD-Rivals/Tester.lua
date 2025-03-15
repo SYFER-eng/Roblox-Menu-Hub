@@ -17,7 +17,7 @@ spawn(function()
         wait(duration)
     end
     createNotification("Syfer-eng's Rival Enhanced", "Features Loaded!", 2)
-    createNotification("💫 Ready!", "Press INSERT to toggle UI and End to close it", 3)
+    createNotification("💫 Ready!", "Press INSERT to toggle UI", 3)
 end)
 
 -- Variables
@@ -1209,7 +1209,3 @@ function createNotification(title, text, duration)
         Icon = "rbxassetid://13647654264"
     })
 end
-
--- Show welcome message
-createNotification("Rivals Enhanced", "Script loaded successfully!", 3)
-createNotification("Controls", "INSERT to toggle UI, END to close", 3)
