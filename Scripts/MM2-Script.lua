@@ -5,21 +5,38 @@ local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local camera = workspace.CurrentCamera
 local enabled = false
 local espEnabled = false
 local connections = {}
 
--- Create ESP folder in CoreGui
 local espFolder = Instance.new("Folder")
 espFolder.Name = "ESP"
 espFolder.Parent = game.CoreGui
+
+local function setupSilentAim()
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local args = {...}
+        local method = getnamecallmethod()
+        
+        if method == "FireServer" and self.Name == "ShootGun" then
+            local target = getClosestPlayerToCursor()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                args[1] = target.Character.Head.Position
+            end
+        end
+        
+        return oldNamecall(self, unpack(args))
+    end)
+end
 
 local function showNotification(message, duration)
     StarterGui:SetCore("SendNotification", {
         Title = "MM2 Script",
         Text = message,
         Duration = duration or 2,
-        Icon = "rbxassetid://83497866000186"
+        Icon = "rbxassetid://6031071053"
     })
 end
 
@@ -45,6 +62,34 @@ local function getSheriff()
     return nil
 end
 
+local function getClosestPlayerToCursor()
+    local murderer = getMurderer()
+    local sheriff = getSheriff()
+    local target = murderer or sheriff
+    
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        return target
+    end
+    return nil
+end
+
+local function smoothLookAt(target)
+    if not target or not target.Character or not Character or not Character.PrimaryPart then return end
+    
+    local targetHead = target.Character:FindFirstChild("Head")
+    if not targetHead then return end
+    
+    local targetPos = targetHead.Position
+    local characterPos = Character.PrimaryPart.Position
+    
+    local newCFrame = CFrame.new(
+        characterPos,
+        Vector3.new(targetPos.X, characterPos.Y, targetPos.Z)
+    )
+    
+    Character:SetPrimaryPartCFrame(newCFrame)
+end
+
 local function attack()
     local tool = Character:FindFirstChildOfClass("Tool")
     if tool then
@@ -52,14 +97,7 @@ local function attack()
     end
 end
 
-local function facePlayer(targetCFrame)
-    if Character and Character.PrimaryPart then
-        Character:SetPrimaryPartCFrame(CFrame.new(Character.PrimaryPart.Position, Vector3.new(targetCFrame.X, Character.PrimaryPart.Position.Y, targetCFrame.Z)))
-    end
-end
-
 local function createESP(player, role)
-    -- Remove existing ESP for this player
     local existingESP = espFolder:FindFirstChild(player.Name .. "_ESP")
     if existingESP then existingESP:Destroy() end
     
@@ -137,31 +175,16 @@ local function teleportBehind()
     local sheriff = getSheriff()
     
     local target = murderer or sheriff
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local targetHead = target.Character.Head
-        local targetCFrame = targetHead.CFrame
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetRoot = target.Character.HumanoidRootPart
+        local targetCFrame = targetRoot.CFrame
         
-        local humanoid = Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = true
-        end
-        
-        local rootPart = Character.PrimaryPart
-        rootPart.Velocity = Vector3.new(0, 0, 0)
-        rootPart.RotVelocity = Vector3.new(0, 0, 0)
-        
-        Character:SetPrimaryPartCFrame(
-            targetCFrame * 
-            CFrame.new(0, 0, 2.5) * 
-            CFrame.new(0, 0.5, 0)
-        )
-        
-        facePlayer(targetCFrame.Position)
+        local behindPosition = targetCFrame * CFrame.new(0, 0, 3)
+        Character.PrimaryPart.CFrame = behindPosition
+        smoothLookAt(target)
         attack()
         
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
+        task.wait(0.1)
     end
 end
 
@@ -186,22 +209,18 @@ local function toggleTP()
 end
 
 local function setupConnections()
-    -- ESP Update Loop
-    table.insert(connections, RunService.RenderStepped:Connect(function()
+    table.insert(connections, RunService.Heartbeat:Connect(function()
+        if enabled then
+            local target = getClosestPlayerToCursor()
+            if target then
+                teleportBehind()
+            end
+        end
         if espEnabled then
             updateESP()
         end
     end))
-    
-    -- Teleport Loop
-    table.insert(connections, RunService.Heartbeat:Connect(function()
-        if enabled then
-            teleportBehind()
-            wait(0.5)
-        end
-    end))
 
-    -- Key Bindings
     table.insert(connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed then
             if input.KeyCode == Enum.KeyCode.P then
@@ -214,7 +233,6 @@ local function setupConnections()
         end
     end))
 
-    -- Character Added
     table.insert(connections, LocalPlayer.CharacterAdded:Connect(function(newCharacter)
         Character = newCharacter
         wait(1)
@@ -258,4 +276,5 @@ function unloadScript()
 end
 
 setupConnections()
+setupSilentAim()
 showNotification("Script Loaded! P = Target, L = ESP, End = Unload", 3)
