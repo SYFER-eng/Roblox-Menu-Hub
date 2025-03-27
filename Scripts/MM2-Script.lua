@@ -14,6 +14,51 @@ local espFolder = Instance.new("Folder")
 espFolder.Name = "ESP"
 espFolder.Parent = game.CoreGui
 
+local function aimAtTarget(targetPosition)
+    local mousemoverel = mousemoverel or (Input and Input.MouseMove)
+    
+    if mousemoverel then
+        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        local targetScreenPos, onScreen = camera:WorldToScreenPoint(targetPosition)
+        
+        while onScreen do
+            local currentScreenPos = camera:WorldToScreenPoint(targetPosition)
+            local moveVector = Vector2.new(
+                currentScreenPos.X - screenCenter.X,
+                currentScreenPos.Y - screenCenter.Y
+            )
+            
+            if math.abs(moveVector.X) < 1 and math.abs(moveVector.Y) < 1 then
+                break
+            end
+            
+            mousemoverel(moveVector.X/10, moveVector.Y/10)
+            task.wait()
+        end
+    end
+end
+
+local function setupSilentAim()
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local args = {...}
+        local method = getnamecallmethod()
+        
+        if method == "FireServer" and self.Name == "ShootGun" then
+            local target = getClosestPlayerToCursor()
+            if target and target.Character then
+                local head = target.Character:FindFirstChild("Head")
+                if head then
+                    args[1] = head.Position + Vector3.new(0, 0.1, 0)
+                    args[2] = head.Position
+                end
+            end
+        end
+        
+        return oldNamecall(self, unpack(args))
+    end)
+end
+
 local function createGunESP(gun)
     local existingESP = espFolder:FindFirstChild("Gun_ESP")
     if existingESP then existingESP:Destroy() end
@@ -60,32 +105,6 @@ local function findDroppedGun()
     return nil
 end
 
-local function setupSilentAim()
-    local oldNamecall
-    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local args = {...}
-        local method = getnamecallmethod()
-        
-        if method == "FireServer" and self.Name == "ShootGun" then
-            local target = getClosestPlayerToCursor()
-            if target and target.Character and target.Character:FindFirstChild("Head") then
-                args[1] = target.Character.Head.Position
-            end
-        end
-        
-        return oldNamecall(self, unpack(args))
-    end)
-end
-
-local function showNotification(message, duration)
-    StarterGui:SetCore("SendNotification", {
-        Title = "MM2 Script",
-        Text = message,
-        Duration = duration or 2,
-        Icon = "rbxassetid://6031071053"
-    })
-end
-
 local function getMurderer()
     for _, player in ipairs(Players:GetPlayers()) do
         if player.Character and player.Backpack then
@@ -117,6 +136,15 @@ local function getClosestPlayerToCursor()
         return target
     end
     return nil
+end
+
+local function showNotification(message, duration)
+    StarterGui:SetCore("SendNotification", {
+        Title = "MM2 Script",
+        Text = message,
+        Duration = duration or 2,
+        Icon = "rbxassetid://6031071053"
+    })
 end
 
 local function smoothLookAt(target)
@@ -244,19 +272,51 @@ local function teleportBehind()
     if not Character or not Character.PrimaryPart then return end
     
     local murderer = getMurderer()
-    local sheriff = getSheriff()
+    local targets = {}
     
-    local target = murderer or sheriff
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local targetRoot = target.Character.HumanoidRootPart
-        local targetCFrame = targetRoot.CFrame
-        
-        local behindPosition = targetCFrame * CFrame.new(0, 0, 3)
-        Character.PrimaryPart.CFrame = behindPosition
-        smoothLookAt(target)
-        attack()
-        
-        task.wait(0.1)
+    -- Get all valid targets
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") 
+            and player.Character:FindFirstChild("Humanoid") 
+            and player.Character.Humanoid.Health > 0 then
+            table.insert(targets, player)
+        end
+    end
+    
+    -- If we're murderer, target everyone. Otherwise, target murderer/sheriff
+    if LocalPlayer == murderer then
+        for _, target in ipairs(targets) do
+            local targetRoot = target.Character.HumanoidRootPart
+            local targetCFrame = targetRoot.CFrame
+            
+            local behindPosition = targetCFrame * CFrame.new(0, 0, 2)
+            Character.PrimaryPart.CFrame = behindPosition
+            smoothLookAt(target)
+            
+            if target.Character:FindFirstChild("Head") then
+                aimAtTarget(target.Character.Head.Position)
+            end
+            
+            attack()
+            task.wait(0.1)
+        end
+    else
+        local target = murderer or getSheriff()
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = target.Character.HumanoidRootPart
+            local targetCFrame = targetRoot.CFrame
+            
+            local behindPosition = targetCFrame * CFrame.new(0, 0, 2)
+            Character.PrimaryPart.CFrame = behindPosition
+            smoothLookAt(target)
+            
+            if target.Character:FindFirstChild("Head") then
+                aimAtTarget(target.Character.Head.Position)
+            end
+            
+            attack()
+            task.wait(0.1)
+        end
     end
 end
 
