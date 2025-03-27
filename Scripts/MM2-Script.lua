@@ -14,6 +14,52 @@ local espFolder = Instance.new("Folder")
 espFolder.Name = "ESP"
 espFolder.Parent = game.CoreGui
 
+local function createGunESP(gun)
+    local existingESP = espFolder:FindFirstChild("Gun_ESP")
+    if existingESP then existingESP:Destroy() end
+    
+    local esp = Instance.new("BillboardGui")
+    local text = Instance.new("TextLabel")
+    local highlight = Instance.new("Highlight")
+    
+    esp.Name = "Gun_ESP"
+    esp.AlwaysOnTop = true
+    esp.Size = UDim2.new(0, 200, 0, 50)
+    esp.StudsOffset = Vector3.new(0, 0, 0)
+    esp.Adornee = gun
+    esp.MaxDistance = 500
+    
+    text.Name = "GunText"
+    text.BackgroundTransparency = 1
+    text.Size = UDim2.new(1, 0, 1, 0)
+    text.Font = Enum.Font.SourceSansBold
+    text.TextSize = 20
+    text.TextStrokeTransparency = 0
+    text.Text = "Gun"
+    text.TextColor3 = Color3.new(0, 0, 1)
+    text.TextStrokeColor3 = Color3.new(0, 0, 0.5)
+    
+    highlight.FillColor = Color3.new(0, 0, 1)
+    highlight.OutlineTransparency = 0.5
+    highlight.FillTransparency = 0.5
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    
+    text.Parent = esp
+    esp.Parent = espFolder
+    highlight.Parent = gun
+    
+    return esp, highlight
+end
+
+local function findDroppedGun()
+    for _, item in ipairs(workspace:GetChildren()) do
+        if item.Name == "Gun" then
+            return item
+        end
+    end
+    return nil
+end
+
 local function setupSilentAim()
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
@@ -126,10 +172,14 @@ local function createESP(player, role)
         text.TextColor3 = Color3.new(1, 0, 0)
         highlight.FillColor = Color3.new(1, 0, 0)
         text.TextStrokeColor3 = Color3.new(0.5, 0, 0)
-    else
+    elseif role == "Sheriff" then
         text.TextColor3 = Color3.new(0, 0, 1)
         highlight.FillColor = Color3.new(0, 0, 1)
         text.TextStrokeColor3 = Color3.new(0, 0, 0.5)
+    else
+        text.TextColor3 = Color3.new(1, 1, 1)
+        highlight.FillColor = Color3.new(1, 1, 1)
+        text.TextStrokeColor3 = Color3.new(0.5, 0.5, 0.5)
     end
     
     highlight.OutlineTransparency = 0.5
@@ -159,12 +209,34 @@ local function updateESP()
     
     local murderer = getMurderer()
     local sheriff = getSheriff()
+    local droppedGun = findDroppedGun()
     
-    if murderer then
-        createESP(murderer, "Murderer")
-    end
-    if sheriff then
-        createESP(sheriff, "Sheriff")
+    if LocalPlayer == murderer then
+        -- Murderer view
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player ~= sheriff then
+                createESP(player, "Player")
+            end
+        end
+        if sheriff then
+            createESP(sheriff, "Sheriff")
+        end
+        if droppedGun then
+            createGunESP(droppedGun)
+        end
+    elseif LocalPlayer == sheriff then
+        -- Sheriff view
+        if murderer then
+            createESP(murderer, "Murderer")
+        end
+    else
+        -- Innocent view
+        if murderer then
+            createESP(murderer, "Murderer")
+        end
+        if sheriff then
+            createESP(sheriff, "Sheriff")
+        end
     end
 end
 
