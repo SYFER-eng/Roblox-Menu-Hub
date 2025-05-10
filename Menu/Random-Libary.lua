@@ -7,6 +7,33 @@
     Author: SYFER
     Version: 2.0.0
     License: MIT
+    
+    USAGE EXAMPLE:
+    
+    local UltraUI = require(game.ReplicatedStorage.UltraUI)
+    
+    -- Create a frame
+    local myFrame = UltraUI.Components.Frame({
+        position = {x = 100, y = 100},
+        size = {width = 300, height = 200},
+        style = UltraUI.Styles.Dark
+    })
+    
+    -- Add a button to the frame
+    local myButton = UltraUI.Components.Button({
+        text = "Click Me!",
+        position = {x = 50, y = 50},
+        size = {width = 200, height = 40}
+    })
+    myFrame:addChild(myButton)
+    
+    -- Add event listener to the button
+    myButton:addEventListener("click", function(component)
+        print("Button clicked!")
+    end)
+    
+    -- Render the UI
+    myFrame:render()
 ]]
 
 -- Define the library as a table
@@ -19,7 +46,98 @@ local UltraUI = {
     Styles = {},      -- Will store style presets
     Utils = {},       -- Will store utility functions
     Animations = {},  -- Will store animation presets
-    ActiveElements = {}  -- Track currently active UI elements
+    ActiveElements = {},  -- Track currently active UI elements
+    Config = {
+        DebugMode = false,
+        DefaultStyle = nil,  -- Will be set to Modern style
+        DefaultAnimation = nil,  -- Will be set later
+        UseProxyObjects = true,  -- Use Lua tables as proxies before creating actual Roblox instances
+        PerformanceMode = "balanced", -- balanced, quality, performance
+    }
+}
+
+-- Error handling utility
+UltraUI.Utils.Error = {
+    throw = function(message, level)
+        level = level or 1
+        if UltraUI.Config.DebugMode then
+            error("[UltraUI Error] " .. tostring(message), level + 1)
+        else
+            warn("[UltraUI Error] " .. tostring(message))
+        end
+    end,
+    
+    assert = function(condition, message, level)
+        level = level or 1
+        if not condition then
+            UltraUI.Utils.Error.throw(message, level + 1)
+            return false
+        end
+        return true
+    end,
+    
+    validateType = function(value, expectedType, paramName, level)
+        level = level or 1
+        local valueType = type(value)
+        
+        if value == nil and expectedType ~= "nil" then
+            UltraUI.Utils.Error.throw("Parameter '" .. paramName .. "' is required and must be of type " .. expectedType, level + 1)
+            return false
+        elseif valueType ~= expectedType then
+            UltraUI.Utils.Error.throw("Parameter '" .. paramName .. "' must be of type " .. expectedType .. ", got " .. valueType, level + 1)
+            return false
+        end
+        
+        return true
+    end,
+    
+    validateNumber = function(value, min, max, paramName, level)
+        level = level or 1
+        if not UltraUI.Utils.Error.validateType(value, "number", paramName, level + 1) then
+            return false
+        end
+        
+        if min and value < min then
+            UltraUI.Utils.Error.throw("Parameter '" .. paramName .. "' must be at least " .. min, level + 1)
+            return false
+        end
+        
+        if max and value > max then
+            UltraUI.Utils.Error.throw("Parameter '" .. paramName .. "' must be at most " .. max, level + 1)
+            return false
+        end
+        
+        return true
+    end
+}
+
+-- Logger utility
+UltraUI.Utils.Logger = {
+    log = function(message, level)
+        level = level or "INFO"
+        if UltraUI.Config.DebugMode or level == "ERROR" or level == "WARNING" then
+            local prefix = "[UltraUI " .. level .. "] "
+            if level == "INFO" then
+                print(prefix .. tostring(message))
+            elseif level == "WARNING" then
+                warn(prefix .. tostring(message))
+            elseif level == "ERROR" then
+                UltraUI.Utils.Error.throw(tostring(message), 2)
+            end
+        end
+    end,
+    
+    info = function(message)
+        UltraUI.Utils.Logger.log(message, "INFO")
+    end,
+    
+    warning = function(message)
+        UltraUI.Utils.Logger.log(message, "WARNING") 
+    end,
+    
+    error = function(message)
+        UltraUI.Utils.Logger.log(message, "ERROR")
+    end
 }
 
 -- Color utilities
@@ -40,11 +158,25 @@ UltraUI.Utils.Color = {
     
     -- Create a new color
     new = function(r, g, b, a)
+        UltraUI.Utils.Error.validateNumber(r, 0, 1, "r", 2)
+        UltraUI.Utils.Error.validateNumber(g, 0, 1, "g", 2)
+        UltraUI.Utils.Error.validateNumber(b, 0, 1, "b", 2)
+        if a ~= nil then
+            UltraUI.Utils.Error.validateNumber(a, 0, 1, "a", 2)
+        end
+        
         return {r = r or 0, g = g or 0, b = b or 0, a = a or 1}
     end,
     
     -- Create a color with RGB values (0-255)
     fromRGB = function(r, g, b, a)
+        UltraUI.Utils.Error.validateNumber(r, 0, 255, "r", 2)
+        UltraUI.Utils.Error.validateNumber(g, 0, 255, "g", 2)
+        UltraUI.Utils.Error.validateNumber(b, 0, 255, "b", 2)
+        if a ~= nil then
+            UltraUI.Utils.Error.validateNumber(a, 0, 1, "a", 2)
+        end
+        
         return {
             r = r / 255,
             g = g / 255,
@@ -55,24 +187,86 @@ UltraUI.Utils.Color = {
     
     -- Create a color from hex string
     fromHex = function(hex)
+        UltraUI.Utils.Error.validateType(hex, "string", "hex", 2)
+        
         hex = hex:gsub("#", "")
-        local r = tonumber(hex:sub(1, 2), 16) / 255
-        local g = tonumber(hex:sub(3, 4), 16) / 255
-        local b = tonumber(hex:sub(5, 6), 16) / 255
+        if #hex ~= 6 and #hex ~= 8 then
+            UltraUI.Utils.Error.throw("Invalid hex color format. Expected '#RRGGBB' or '#RRGGBBAA'", 2)
+            return UltraUI.Utils.Color.Presets.BLACK
+        end
+        
+        local r = tonumber(hex:sub(1, 2), 16)
+        local g = tonumber(hex:sub(3, 4), 16)
+        local b = tonumber(hex:sub(5, 6), 16)
+        
+        if not r or not g or not b then
+            UltraUI.Utils.Error.throw("Invalid hex color format. Could not parse RGB values", 2)
+            return UltraUI.Utils.Color.Presets.BLACK
+        end
+        
+        r = r / 255
+        g = g / 255
+        b = b / 255
+        
         local a = 1
         if #hex == 8 then
-            a = tonumber(hex:sub(7, 8), 16) / 255
+            a = tonumber(hex:sub(7, 8), 16)
+            if not a then
+                UltraUI.Utils.Error.throw("Invalid hex color format. Could not parse alpha value", 2)
+                a = 255
+            end
+            a = a / 255
         end
+        
         return {r = r, g = g, b = b, a = a}
+    end,
+    
+    -- Convert color to Color3 for Roblox
+    toColor3 = function(color)
+        if not color then return Color3.new(0, 0, 0) end
+        return Color3.new(color.r, color.g, color.b)
     end,
     
     -- Interpolate between two colors
     lerp = function(color1, color2, t)
+        if not color1 or not color2 then
+            UltraUI.Utils.Error.throw("Color lerp requires two valid colors", 2)
+            return UltraUI.Utils.Color.Presets.BLACK
+        end
+        
+        t = UltraUI.Utils.Math.clamp(t, 0, 1)
+        
         return {
             r = color1.r + (color2.r - color1.r) * t,
             g = color1.g + (color2.g - color1.g) * t,
             b = color1.b + (color2.b - color1.b) * t,
             a = color1.a + (color2.a - color1.a) * t
+        }
+    end,
+    
+    -- Darken a color by a percentage (0-1)
+    darken = function(color, amount)
+        amount = amount or 0.2
+        UltraUI.Utils.Error.validateNumber(amount, 0, 1, "amount", 2)
+        
+        return {
+            r = UltraUI.Utils.Math.clamp(color.r * (1 - amount), 0, 1),
+            g = UltraUI.Utils.Math.clamp(color.g * (1 - amount), 0, 1),
+            b = UltraUI.Utils.Math.clamp(color.b * (1 - amount), 0, 1),
+            a = color.a
+        }
+    end,
+    
+    -- Lighten a color by a percentage (0-1)
+    lighten = function(color, amount)
+        amount = amount or 0.2
+        UltraUI.Utils.Error.validateNumber(amount, 0, 1, "amount", 2)
+        
+        return {
+            r = UltraUI.Utils.Math.clamp(color.r + (1 - color.r) * amount, 0, 1),
+            g = UltraUI.Utils.Math.clamp(color.g + (1 - color.g) * amount, 0, 1),
+            b = UltraUI.Utils.Math.clamp(color.b + (1 - color.b) * amount, 0, 1),
+            a = color.a
         }
     end
 }
@@ -83,7 +277,14 @@ UltraUI.Utils.Math = {
     random = function(min, max)
         min = min or 0
         max = max or 1
-        math.randomseed(os.time())
+        
+        if min > max then
+            local temp = min
+            min = max
+            max = temp
+        end
+        
+        math.randomseed(tick() * 1000)
         return min + math.random() * (max - min)
     end,
     
@@ -91,7 +292,14 @@ UltraUI.Utils.Math = {
     randomInt = function(min, max)
         min = min or 1
         max = max or 100
-        math.randomseed(os.time())
+        
+        if min > max then
+            local temp = min
+            min = max
+            max = temp
+        end
+        
+        math.randomseed(tick() * 1000)
         return math.floor(min + math.random() * (max - min + 1))
     end,
     
@@ -99,37 +307,262 @@ UltraUI.Utils.Math = {
     clamp = function(value, min, max)
         min = min or 0
         max = max or 1
+        
+        if min > max then
+            local temp = min
+            min = max
+            max = temp
+        end
+        
         return math.max(min, math.min(max, value))
     end,
     
     -- Linear interpolation
     lerp = function(a, b, t)
         return a + (b - a) * t
+    end,
+    
+    -- Convert degrees to radians
+    toRadians = function(degrees)
+        return degrees * (math.pi / 180)
+    end,
+    
+    -- Convert radians to degrees
+    toDegrees = function(radians)
+        return radians * (180 / math.pi)
+    end,
+    
+    -- Get distance between two points
+    distance = function(x1, y1, x2, y2)
+        return math.sqrt((x2 - x1)^2 + (y2 - y1)^2)
+    end,
+    
+    -- Map a value from one range to another
+    map = function(value, min1, max1, min2, max2)
+        return min2 + (max2 - min2) * ((value - min1) / (max1 - min1))
     end
 }
 
 -- String utilities
 UltraUI.Utils.String = {
     -- Generate a random ID
-    generateId = function(length)
+    generateId = function(length, prefix)
         length = length or 8
+        prefix = prefix or "ui_"
+        
+        UltraUI.Utils.Error.validateNumber(length, 1, 64, "length", 2)
+        
         local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        local id = ""
+        local id = prefix
+        
+        math.randomseed(tick() * 1000)
         for i = 1, length do
             local randomIndex = math.random(1, #chars)
             id = id .. string.sub(chars, randomIndex, randomIndex)
         end
+        
         return id
     end,
     
     -- Truncate a string to a given length
     truncate = function(str, length, suffix)
+        UltraUI.Utils.Error.validateType(str, "string", "str", 2)
+        UltraUI.Utils.Error.validateNumber(length, 1, nil, "length", 2)
+        
         suffix = suffix or "..."
+        
         if #str <= length then
             return str
         else
             return string.sub(str, 1, length - #suffix) .. suffix
         end
+    end,
+    
+    -- Capitalize the first letter of a string
+    capitalize = function(str)
+        UltraUI.Utils.Error.validateType(str, "string", "str", 2)
+        
+        if #str == 0 then return str end
+        return string.upper(string.sub(str, 1, 1)) .. string.sub(str, 2)
+    end,
+    
+    -- Format a string with variables
+    format = function(str, vars)
+        UltraUI.Utils.Error.validateType(str, "string", "str", 2)
+        UltraUI.Utils.Error.validateType(vars, "table", "vars", 2)
+        
+        return str:gsub("{([^{}]+)}", function(key)
+            return tostring(vars[key] or "{" .. key .. "}")
+        end)
+    end
+}
+
+-- Table utilities
+UltraUI.Utils.Table = {
+    -- Deep copy a table
+    deepCopy = function(original)
+        if type(original) ~= "table" then return original end
+        
+        local copy = {}
+        for k, v in pairs(original) do
+            if type(v) == "table" then
+                copy[k] = UltraUI.Utils.Table.deepCopy(v)
+            else
+                copy[k] = v
+            end
+        end
+        
+        return copy
+    end,
+    
+    -- Merge two tables deeply (second table overwrites first)
+    merge = function(t1, t2)
+        local result = UltraUI.Utils.Table.deepCopy(t1 or {})
+        
+        if not t2 then return result end
+        
+        for k, v in pairs(t2) do
+            if type(v) == "table" and type(result[k]) == "table" then
+                result[k] = UltraUI.Utils.Table.merge(result[k], v)
+            else
+                result[k] = v
+            end
+        end
+        
+        return result
+    end,
+    
+    -- Check if a table contains a value
+    contains = function(t, value)
+        for _, v in pairs(t) do
+            if v == value then
+                return true
+            end
+        end
+        return false
+    end,
+    
+    -- Find an item in a table by a property value
+    findByProperty = function(t, propName, propValue)
+        for _, item in pairs(t) do
+            if item[propName] == propValue then
+                return item
+            end
+        end
+        return nil
+    end,
+    
+    -- Get table length (works for non-sequential tables)
+    length = function(t)
+        local count = 0
+        for _ in pairs(t) do
+            count = count + 1
+        end
+        return count
+    end,
+    
+    -- Filter a table based on a predicate function
+    filter = function(t, predicate)
+        local result = {}
+        for k, v in pairs(t) do
+            if predicate(v, k, t) then
+                result[k] = v
+            end
+        end
+        return result
+    end,
+    
+    -- Map table values using a transform function
+    map = function(t, transform)
+        local result = {}
+        for k, v in pairs(t) do
+            result[k] = transform(v, k, t)
+        end
+        return result
+    end,
+    
+    -- Check if all elements satisfy a condition
+    all = function(t, predicate)
+        for k, v in pairs(t) do
+            if not predicate(v, k, t) then
+                return false
+            end
+        end
+        return true
+    end,
+    
+    -- Find the first element that satisfies a condition
+    find = function(t, predicate)
+        for k, v in pairs(t) do
+            if predicate(v, k, t) then
+                return v, k
+            end
+        end
+        return nil
+    end
+}
+
+-- Animation system with easing functions
+UltraUI.Utils.Easing = {
+    linear = function(t)
+        return t
+    end,
+    
+    easeInQuad = function(t)
+        return t * t
+    end,
+    
+    easeOutQuad = function(t)
+        return t * (2 - t)
+    end,
+    
+    easeInOutQuad = function(t)
+        if t < 0.5 then
+            return 2 * t * t
+        else
+            return -1 + (4 - 2 * t) * t
+        end
+    end,
+    
+    easeInCubic = function(t)
+        return t * t * t
+    end,
+    
+    easeOutCubic = function(t)
+        t = t - 1
+        return t * t * t + 1
+    end,
+    
+    easeInOutCubic = function(t)
+        if t < 0.5 then
+            return 4 * t * t * t
+        else
+            return (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+        end
+    end,
+    
+    easeInBack = function(t)
+        local s = 1.70158
+        return t * t * ((s + 1) * t - s)
+    end,
+    
+    easeOutBack = function(t)
+        local s = 1.70158
+        return (t - 1) * (t - 1) * ((s + 1) * (t - 1) + s) + 1
+    end,
+    
+    easeInOutBack = function(t)
+        local s = 1.70158 * 1.525
+        if t < 0.5 then
+            return (t * 2) * (t * 2) * ((s + 1) * (t * 2) - s) / 2
+        else
+            return ((t * 2) - 2) * ((t * 2) - 2) * ((s + 1) * ((t * 2) - 2) + s) / 2 + 1
+        end
+    end,
+    
+    easeOutElastic = function(t)
+        local p = 0.3
+        return math.pow(2, -10 * t) * math.sin((t - p / 4) * (2 * math.pi) / p) + 1
     end
 }
 
@@ -162,6 +595,11 @@ UltraUI.Animations = {
     -- Slide in animation
     slideIn = function(direction, duration, delay)
         direction = direction or "right"
+        UltraUI.Utils.Error.assert(
+            direction == "right" or direction == "left" or direction == "top" or direction == "bottom",
+            "Direction must be 'right', 'left', 'top', or 'bottom'"
+        )
+        
         local fromPos = {x = 0, y = 0}
         
         if direction == "right" then
@@ -184,23 +622,94 @@ UltraUI.Animations = {
         }
     end,
     
+    -- Slide out animation
+    slideOut = function(direction, duration, delay)
+        direction = direction or "right"
+        UltraUI.Utils.Error.assert(
+            direction == "right" or direction == "left" or direction == "top" or direction == "bottom",
+            "Direction must be 'right', 'left', 'top', or 'bottom'"
+        )
+        
+        local toPos = {x = 0, y = 0}
+        
+        if direction == "right" then
+            toPos.x = 100
+        elseif direction == "left" then
+            toPos.x = -100
+        elseif direction == "top" then
+            toPos.y = -100
+        elseif direction == "bottom" then
+            toPos.y = 100
+        end
+        
+        return {
+            type = "slide",
+            from = {x = 0, y = 0},
+            to = toPos,
+            duration = duration or 0.5,
+            delay = delay or 0,
+            easing = "easeInBack"
+        }
+    end,
+    
     -- Bounce animation
     bounce = function(intensity, duration)
+        intensity = intensity or 1.2
+        duration = duration or 0.6
+        
         return {
             type = "bounce",
-            intensity = intensity or 1.2,
-            duration = duration or 0.6,
+            intensity = intensity,
+            duration = duration,
             easing = "easeOutElastic"
         }
     end,
     
     -- Pulse animation
     pulse = function(times, intensity, duration)
+        times = times or 3
+        intensity = intensity or 1.1
+        duration = duration or 0.8
+        
         return {
             type = "pulse",
-            times = times or 3,
-            intensity = intensity or 1.1,
-            duration = duration or 0.8,
+            times = times,
+            intensity = intensity,
+            duration = duration,
+            easing = "easeInOutQuad"
+        }
+    end,
+    
+    -- Scale animation
+    scale = function(from, to, duration, delay)
+        from = from or 0.5
+        to = to or 1
+        duration = duration or 0.4
+        delay = delay or 0
+        
+        return {
+            type = "scale",
+            from = from,
+            to = to,
+            duration = duration,
+            delay = delay,
+            easing = "easeOutBack"
+        }
+    end,
+    
+    -- Rotate animation
+    rotate = function(from, to, duration, delay)
+        from = from or 0
+        to = to or 360
+        duration = duration or 0.5
+        delay = delay or 0
+        
+        return {
+            type = "rotate",
+            from = from,
+            to = to,
+            duration = duration,
+            delay = delay,
             easing = "easeInOutQuad"
         }
     end
@@ -324,6 +833,38 @@ UltraUI.Styles = {
             spread = 0,
             color = UltraUI.Utils.Color.fromRGB(0, 0, 0, 0.3)
         }
+    },
+    
+    -- New: Glassmorphism style
+    Glass = {
+        fontFamily = "Gotham",
+        fontSize = 14,
+        cornerRadius = 10,
+        padding = 12,
+        margin = 6,
+        colors = {
+            background = UltraUI.Utils.Color.fromRGB(255, 255, 255, 0.15),
+            foreground = UltraUI.Utils.Color.fromRGB(255, 255, 255),
+            primary = UltraUI.Utils.Color.fromRGB(255, 255, 255, 0.7),
+            secondary = UltraUI.Utils.Color.fromRGB(255, 255, 255, 0.25),
+            accent = UltraUI.Utils.Color.fromRGB(112, 215, 255),
+            success = UltraUI.Utils.Color.fromRGB(88, 255, 170, 0.7),
+            warning = UltraUI.Utils.Color.fromRGB(255, 200, 0, 0.7),
+            error = UltraUI.Utils.Color.fromRGB(255, 100, 100, 0.7)
+        },
+        blur = {
+            enabled = true,
+            intensity = 10
+        },
+        border = {
+            width = 1,
+            color = UltraUI.Utils.Color.fromRGB(255, 255, 255, 0.4)
+        },
+        glow = {
+            size = 15,
+            intensity = 0.3,
+            color = UltraUI.Utils.Color.fromRGB(255, 255, 255, 0.5)
+        }
     }
 }
 
@@ -346,138 +887,188 @@ UltraUI.Components.Base = function(params)
         state = {
             isHovered = false,
             isPressed = false,
-            isFocused = false
-        }
+            isFocused = false,
+            isDisabled = params.disabled or false
+        },
+        _robloxInstance = nil -- Will store the actual Roblox UI instance when rendered
     }
     
-    -- Event handling
-    component.addEventListener = function(eventName, callback)
-        if not component.events[eventName] then
-            component.events[eventName] = {}
-        end
-        table.insert(component.events[eventName], callback)
-        return component
-    end
-    
-    component.triggerEvent = function(eventName, ...)
-        if component.events[eventName] then
-            for _, callback in ipairs(component.events[eventName]) do
-                callback(component, ...)
+    -- Event handling methods using metatables for cleaner syntax
+    local componentMethods = {
+        -- Event handling
+        addEventListener = function(self, eventName, callback)
+            if not self.events[eventName] then
+                self.events[eventName] = {}
             end
-        end
-        return component
-    end
-    
-    -- Add a child component
-    component.addChild = function(child)
-        if child then
-            child.parent = component
-            table.insert(component.children, child)
-        end
-        return component
-    end
-    
-    -- Remove a child component
-    component.removeChild = function(childId)
-        for i, child in ipairs(component.children) do
-            if child.id == childId then
-                table.remove(component.children, i)
-                return true
+            table.insert(self.events[eventName], callback)
+            return self
+        end,
+        
+        -- Shorthand for common events
+        onClick = function(self, callback)
+            return self:addEventListener("click", callback)
+        end,
+        
+        onHover = function(self, callback)
+            return self:addEventListener("hover", callback)
+        end,
+        
+        onLeave = function(self, callback)
+            return self:addEventListener("leave", callback)
+        end,
+        
+        onFocus = function(self, callback)
+            return self:addEventListener("focus", callback)
+        end,
+        
+        onBlur = function(self, callback)
+            return self:addEventListener("blur", callback)
+        end,
+        
+        onValueChange = function(self, callback)
+            return self:addEventListener("valueChange", callback)
+        end,
+        
+        -- Trigger an event
+        triggerEvent = function(self, eventName, ...)
+            if self.events[eventName] then
+                for _, callback in ipairs(self.events[eventName]) do
+                    callback(self, ...)
+                end
             end
+            return self
+        end,
+        
+        -- Child management
+        addChild = function(self, child)
+            if child then
+                child.parent = self
+                table.insert(self.children, child)
+            end
+            return self
+        end,
+        
+        removeChild = function(self, childId)
+            for i, child in ipairs(self.children) do
+                if child.id == childId then
+                    table.remove(self.children, i)
+                    return true
+                end
+            end
+            return false
+        end,
+        
+        removeAllChildren = function(self)
+            for _, child in ipairs(self.children) do
+                child:destroy()
+            end
+            self.children = {}
+            return self
+        end,
+        
+        -- State management
+        setVisible = function(self, visible)
+            self.visible = visible
+            self:triggerEvent("visibilityChange", visible)
+            return self
+        end,
+        
+        setPosition = function(self, x, y)
+            self.position.x = x
+            self.position.y = y
+            self:triggerEvent("positionChange", self.position)
+            return self
+        end,
+        
+        setSize = function(self, width, height)
+            self.size.width = width
+            self.size.height = height
+            self:triggerEvent("sizeChange", self.size)
+            return self
+        end,
+        
+        setDisabled = function(self, disabled)
+            self.state.isDisabled = disabled
+            self:triggerEvent("disabledChange", disabled)
+            return self
+        end,
+        
+        applyStyle = function(self, style)
+            self.style = style
+            self:triggerEvent("styleChange", style)
+            return self
+        end,
+        
+        -- Animation management
+        addAnimation = function(self, animationDef)
+            table.insert(self.animations, animationDef)
+            return self
+        end,
+        
+        playAnimation = function(self, animationIndex)
+            local animation = self.animations[animationIndex]
+            if animation then
+                UltraUI.Utils.Logger.info("Playing animation on " .. self.id)
+                self:triggerEvent("animationStart", animation)
+                
+                -- In a real Roblox implementation, this would properly animate using TweenService
+                -- For this demo, we just trigger the completion immediately
+                self:triggerEvent("animationComplete", animation)
+            end
+            return self
+        end,
+        
+        -- Rendering
+        render = function(self)
+            if not self.visible then
+                return self
+            end
+            
+            UltraUI.Utils.Logger.info("Rendering " .. self.type .. " (id: " .. self.id .. ")")
+            
+            -- In a real implementation, this would create the actual Roblox UI instance
+            -- For this demo, we just print properties
+            
+            -- Render all children
+            for _, child in ipairs(self.children) do
+                child:render()
+            end
+            
+            return self
+        end,
+        
+        -- Cleanup
+        destroy = function(self)
+            -- Remove all event listeners
+            self.events = {}
+            
+            -- Remove from parent
+            if self.parent then
+                self.parent:removeChild(self.id)
+            end
+            
+            -- Destroy all children
+            for _, child in ipairs(self.children) do
+                child:destroy()
+            end
+            
+            -- Clear children array
+            self.children = {}
+            
+            -- Remove from active elements
+            UltraUI.ActiveElements[self.id] = nil
+            
+            return nil
         end
-        return false
-    end
+    }
     
-    -- Set visibility
-    component.setVisible = function(visible)
-        component.visible = visible
-        component.triggerEvent("visibilityChange", visible)
-        return component
-    end
+    -- Create a metatable for the component to enable method syntax with ':'
+    local mt = {
+        __index = componentMethods
+    }
     
-    -- Set position
-    component.setPosition = function(x, y)
-        component.position.x = x
-        component.position.y = y
-        component.triggerEvent("positionChange", component.position)
-        return component
-    end
-    
-    -- Set size
-    component.setSize = function(width, height)
-        component.size.width = width
-        component.size.height = height
-        component.triggerEvent("sizeChange", component.size)
-        return component
-    end
-    
-    -- Apply style
-    component.applyStyle = function(style)
-        component.style = style
-        component.triggerEvent("styleChange", style)
-        return component
-    end
-    
-    -- Add animation
-    component.addAnimation = function(animationDef)
-        table.insert(component.animations, animationDef)
-        return component
-    end
-    
-    -- Play animation
-    component.playAnimation = function(animationIndex)
-        -- In a real implementation, this would start the animation
-        local animation = component.animations[animationIndex]
-        if animation then
-            print("Playing animation on " .. component.id)
-            component.triggerEvent("animationStart", animation)
-            -- Simulate animation completion after a delay
-            -- In a real Roblox script, this would use proper animation timing
-            component.triggerEvent("animationComplete", animation)
-        end
-        return component
-    end
-    
-    -- Render the component
-    component.render = function()
-        if not component.visible then
-            return
-        end
-        
-        print("Rendering " .. component.type .. " (id: " .. component.id .. ")")
-        
-        -- This would be where the actual Roblox UI creation happens
-        -- Instead, for this demo, we'll just print out the component properties
-        
-        -- Render children
-        for _, child in ipairs(component.children) do
-            child.render()
-        end
-        
-        return component
-    end
-    
-    -- Destroy the component
-    component.destroy = function()
-        -- Remove all event listeners
-        component.events = {}
-        
-        -- Remove from parent
-        if component.parent then
-            component.parent.removeChild(component.id)
-        end
-        
-        -- Destroy all children
-        for _, child in ipairs(component.children) do
-            child.destroy()
-        end
-        
-        -- Clear children array
-        component.children = {}
-        
-        -- Remove from active elements
-        UltraUI.ActiveElements[component.id] = nil
-    end
+    -- Apply the metatable to the component
+    setmetatable(component, mt)
     
     -- Register this component as active
     UltraUI.ActiveElements[component.id] = component
@@ -485,7 +1076,7 @@ UltraUI.Components.Base = function(params)
     return component
 end
 
--- Create a Container component
+-- Create a Container/Frame component
 UltraUI.Components.Container = function(params)
     params = params or {}
     params.type = "container"
@@ -495,10 +1086,9 @@ UltraUI.Components.Container = function(params)
     
     -- Create base component
     local container = UltraUI.Components.Base(params)
-    container.type = "container"
     
     -- Container-specific properties
-    container.layout = params.layout or "vertical" -- vertical, horizontal, grid, free
+    container.layout = params.layout or "vertical" -- Options: vertical, horizontal, grid, free
     container.padding = params.padding or container.style.padding or 10
     container.spacing = params.spacing or 5
     container.backgroundColor = params.backgroundColor or container.style.colors.background
@@ -507,33 +1097,22 @@ UltraUI.Components.Container = function(params)
     container.borderWidth = params.borderWidth or 0
     container.shadow = params.shadow or container.style.shadow
     container.scrollable = params.scrollable ~= false
+    container.title = params.title
+    container.titleBarVisible = params.titleBarVisible ~= false
+    container.titleBarHeight = params.titleBarHeight or 30
+    container.dragEnabled = params.dragEnabled ~= false
+    container.resizeEnabled = params.resizeEnabled ~= false
     
-    -- Override render function
-    local baseRender = container.render
-    container.render = function()
-        if not container.visible then
-            return
-        end
-        
-        print("\n=== Container: " .. container.id .. " ===")
-        print("Size: " .. container.size.width .. "x" .. container.size.height)
-        print("Position: " .. container.position.x .. ", " .. container.position.y)
-        print("Layout: " .. container.layout)
-        print("Background: RGB(" .. 
-            math.floor(container.backgroundColor.r * 255) .. "," .. 
-            math.floor(container.backgroundColor.g * 255) .. "," .. 
-            math.floor(container.backgroundColor.b * 255) .. ")")
-        print("Children: " .. #container.children)
-        print("===")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return container
+    -- Enable frame as a draggable window
+    if container.title then
+        container.titleBarVisible = true
     end
     
     return container
 end
+
+-- Alias Frame to Container for convenience
+UltraUI.Components.Frame = UltraUI.Components.Container
 
 -- Create a Button component
 UltraUI.Components.Button = function(params)
@@ -545,154 +1124,58 @@ UltraUI.Components.Button = function(params)
     
     -- Create base component
     local button = UltraUI.Components.Base(params)
-    button.type = "button"
     
     -- Button-specific properties
     button.text = params.text or "Button"
     button.textColor = params.textColor or button.style.colors.foreground
+    button.textSize = params.textSize or button.style.fontSize
+    button.textFont = params.textFont or button.style.fontFamily
     button.backgroundColor = params.backgroundColor or button.style.colors.primary
-    button.hoverColor = params.hoverColor or {
-        r = button.backgroundColor.r * 1.1,
-        g = button.backgroundColor.g * 1.1,
-        b = button.backgroundColor.b * 1.1,
-        a = button.backgroundColor.a
-    }
-    button.pressedColor = params.pressedColor or {
-        r = button.backgroundColor.r * 0.9,
-        g = button.backgroundColor.g * 0.9,
-        b = button.backgroundColor.b * 0.9,
-        a = button.backgroundColor.a
-    }
-    button.borderRadius = params.borderRadius or button.style.cornerRadius or 8
+    button.borderRadius = params.borderRadius or button.style.cornerRadius
     button.borderColor = params.borderColor
     button.borderWidth = params.borderWidth or 0
-    button.disabled = params.disabled or false
+    button.padding = params.padding or button.style.padding
     button.icon = params.icon
+    button.iconSize = params.iconSize or 16
     button.iconPosition = params.iconPosition or "left" -- left, right, top, bottom
-    
-    -- Button event handlers
-    button.onClick = function(callback)
-        return button.addEventListener("click", callback)
-    end
-    
-    -- Toggle disabled state
-    button.setDisabled = function(disabled)
-        button.disabled = disabled
-        button.triggerEvent("disabledChange", disabled)
-        return button
-    end
-    
-    -- Set text
-    button.setText = function(text)
-        button.text = text
-        button.triggerEvent("textChange", text)
-        return button
-    end
-    
-    -- Simulate a click
-    button.click = function()
-        if not button.disabled then
-            button.triggerEvent("click")
-        end
-        return button
-    end
-    
-    -- Override render
-    local baseRender = button.render
-    button.render = function()
-        if not button.visible then
-            return
-        end
-        
-        local displayColor = button.backgroundColor
-        if button.disabled then
-            -- Apply a desaturated color for disabled state
-            local gray = (displayColor.r + displayColor.g + displayColor.b) / 3
-            displayColor = {
-                r = gray * 0.8,
-                g = gray * 0.8,
-                b = gray * 0.8,
-                a = displayColor.a * 0.7
-            }
-        elseif button.state.isPressed then
-            displayColor = button.pressedColor
-        elseif button.state.isHovered then
-            displayColor = button.hoverColor
-        end
-        
-        print("\n--- Button: " .. button.text .. " ---")
-        print("Size: " .. button.size.width .. "x" .. button.size.height)
-        print("Position: " .. button.position.x .. ", " .. button.position.y)
-        if button.disabled then
-            print("State: Disabled")
-        elseif button.state.isPressed then
-            print("State: Pressed")
-        elseif button.state.isHovered then
-            print("State: Hovered")
-        else
-            print("State: Normal")
-        end
-        print("---")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return button
+    button.hoverColor = params.hoverColor or UltraUI.Utils.Color.lighten(params.backgroundColor or button.style.colors.primary, 0.1)
+    button.pressedColor = params.pressedColor or UltraUI.Utils.Color.darken(params.backgroundColor or button.style.colors.primary, 0.1)
+    button.disabledColor = params.disabledColor or UltraUI.Utils.Color.fromRGB(180, 180, 180)
+    button.tooltipText = params.tooltipText
+    button.onClick = function(self, callback)
+        return self:addEventListener("click", callback)
     end
     
     return button
 end
 
--- Create a Label component
+-- Create a Label/Text component
 UltraUI.Components.Label = function(params)
     params = params or {}
     params.type = "label"
     
     -- Create base component
     local label = UltraUI.Components.Base(params)
-    label.type = "label"
     
     -- Label-specific properties
     label.text = params.text or "Label"
     label.textColor = params.textColor or label.style.colors.foreground
-    label.fontSize = params.fontSize or label.style.fontSize or 14
-    label.fontWeight = params.fontWeight or "regular" -- regular, bold, light, italic
+    label.textSize = params.textSize or label.style.fontSize
+    label.textFont = params.textFont or label.style.fontFamily
+    label.backgroundColor = params.backgroundColor or UltraUI.Utils.Color.Presets.TRANSPARENT
     label.textAlign = params.textAlign or "left" -- left, center, right
+    label.textVerticalAlign = params.textVerticalAlign or "center" -- top, center, bottom
     label.wrap = params.wrap ~= false
-    label.truncate = params.truncate or false
+    label.richText = params.richText or false
+    label.shadowEnabled = params.shadowEnabled or false
+    label.shadowColor = params.shadowColor or UltraUI.Utils.Color.fromRGB(0, 0, 0, 0.3)
+    label.shadowOffset = params.shadowOffset or {x = 1, y = 1}
     
-    -- Set text
-    label.setText = function(text)
-        label.text = text
-        label.triggerEvent("textChange", text)
-        return label
-    end
-    
-    -- Set text color
-    label.setTextColor = function(color)
-        label.textColor = color
-        label.triggerEvent("textColorChange", color)
-        return label
-    end
-    
-    -- Override render
-    local baseRender = label.render
-    label.render = function()
-        if not label.visible then
-            return
-        end
-        
-        print("--- Label: " .. label.text .. " ---")
-        print("Size: " .. label.size.width .. "x" .. label.size.height)
-        print("Position: " .. label.position.x .. ", " .. label.position.y)
-        print("Font size: " .. label.fontSize)
-        print("Alignment: " .. label.textAlign)
-        print("---")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return label
+    -- Text truncation
+    label.setText = function(self, text)
+        self.text = text
+        self:triggerEvent("textChange", text)
+        return self
     end
     
     return label
@@ -708,156 +1191,94 @@ UltraUI.Components.Dropdown = function(params)
     
     -- Create base component
     local dropdown = UltraUI.Components.Base(params)
-    dropdown.type = "dropdown"
     
     -- Dropdown-specific properties
     dropdown.options = params.options or {}
-    dropdown.selectedIndex = params.selectedIndex or 0
-    dropdown.placeholder = params.placeholder or "Select an option"
-    dropdown.isOpen = false
-    dropdown.maxHeight = params.maxHeight or 200
+    dropdown.selectedIndex = params.selectedIndex or 1
+    dropdown.selectedValue = params.options and params.options[params.selectedIndex or 1] or nil
+    dropdown.placeholderText = params.placeholderText or "Select an option"
     dropdown.textColor = params.textColor or dropdown.style.colors.foreground
     dropdown.backgroundColor = params.backgroundColor or dropdown.style.colors.secondary
-    dropdown.highlightColor = params.highlightColor or dropdown.style.colors.primary
-    dropdown.borderRadius = params.borderRadius or dropdown.style.cornerRadius or 8
-    dropdown.borderColor = params.borderColor or dropdown.style.colors.secondary
+    dropdown.dropdownBackgroundColor = params.dropdownBackgroundColor or dropdown.style.colors.background
+    dropdown.borderRadius = params.borderRadius or dropdown.style.cornerRadius
+    dropdown.borderColor = params.borderColor or dropdown.style.colors.primary
     dropdown.borderWidth = params.borderWidth or 1
+    dropdown.maxHeight = params.maxHeight or 200
+    dropdown.hoverColor = params.hoverColor or UltraUI.Utils.Color.lighten(params.backgroundColor or dropdown.style.colors.secondary, 0.1)
+    dropdown.isOpen = false
+    dropdown.multiSelect = params.multiSelect or false
+    dropdown.selectedIndices = params.selectedIndices or (params.multiSelect and {} or nil)
     
-    -- Get selected item
-    dropdown.getSelectedItem = function()
-        if dropdown.selectedIndex > 0 and dropdown.selectedIndex <= #dropdown.options then
-            return dropdown.options[dropdown.selectedIndex]
-        end
-        return nil
+    -- Dropdown methods
+    dropdown.open = function(self)
+        self.isOpen = true
+        self:triggerEvent("open")
+        return self
     end
     
-    -- Get selected value
-    dropdown.getSelectedValue = function()
-        local item = dropdown.getSelectedItem()
-        if item then
-            if type(item) == "table" then
-                return item.value
-            else
-                return item
-            end
-        end
-        return nil
+    dropdown.close = function(self)
+        self.isOpen = false
+        self:triggerEvent("close")
+        return self
     end
     
-    -- Get display text
-    dropdown.getDisplayText = function()
-        local item = dropdown.getSelectedItem()
-        if item then
-            if type(item) == "table" then
-                return item.text or tostring(item.value)
-            else
-                return tostring(item)
-            end
-        end
-        return dropdown.placeholder
+    dropdown.toggle = function(self)
+        self.isOpen = not self.isOpen
+        self:triggerEvent(self.isOpen and "open" or "close")
+        return self
     end
     
-    -- Set selected index
-    dropdown.setSelectedIndex = function(index)
-        if index >= 0 and index <= #dropdown.options then
-            dropdown.selectedIndex = index
-            dropdown.triggerEvent("selectionChange", dropdown.getSelectedItem(), index)
-        end
-        return dropdown
-    end
-    
-    -- Add option
-    dropdown.addOption = function(option)
-        table.insert(dropdown.options, option)
-        dropdown.triggerEvent("optionsChange", dropdown.options)
-        return dropdown
-    end
-    
-    -- Remove option
-    dropdown.removeOption = function(index)
-        if index > 0 and index <= #dropdown.options then
-            table.remove(dropdown.options, index)
-            if dropdown.selectedIndex == index then
-                dropdown.selectedIndex = 0
-            elseif dropdown.selectedIndex > index then
-                dropdown.selectedIndex = dropdown.selectedIndex - 1
-            end
-            dropdown.triggerEvent("optionsChange", dropdown.options)
-        end
-        return dropdown
-    end
-    
-    -- Toggle dropdown
-    dropdown.toggle = function()
-        dropdown.isOpen = not dropdown.isOpen
-        dropdown.triggerEvent("toggle", dropdown.isOpen)
-        return dropdown
-    end
-    
-    -- Open dropdown
-    dropdown.open = function()
-        if not dropdown.isOpen then
-            dropdown.isOpen = true
-            dropdown.triggerEvent("open")
-        end
-        return dropdown
-    end
-    
-    -- Close dropdown
-    dropdown.close = function()
-        if dropdown.isOpen then
-            dropdown.isOpen = false
-            dropdown.triggerEvent("close")
-        end
-        return dropdown
-    end
-    
-    -- Event handlers
-    dropdown.onSelectionChange = function(callback)
-        return dropdown.addEventListener("selectionChange", callback)
-    end
-    
-    dropdown.onOpen = function(callback)
-        return dropdown.addEventListener("open", callback)
-    end
-    
-    dropdown.onClose = function(callback)
-        return dropdown.addEventListener("close", callback)
-    end
-    
-    -- Override render
-    local baseRender = dropdown.render
-    dropdown.render = function()
-        if not dropdown.visible then
-            return
-        end
-        
-        print("\n=== Dropdown: " .. dropdown.id .. " ===")
-        print("Selected: " .. dropdown.getDisplayText())
-        print("Options: " .. #dropdown.options)
-        print("State: " .. (dropdown.isOpen and "Open" or "Closed"))
-        
-        if dropdown.isOpen then
-            print("\nAvailable Options:")
-            for i, option in ipairs(dropdown.options) do
-                local optionText
-                if type(option) == "table" then
-                    optionText = option.text or tostring(option.value)
-                else
-                    optionText = tostring(option)
+    dropdown.selectOption = function(self, index)
+        if self.multiSelect then
+            -- Toggle selection in multi-select mode
+            local found = false
+            for i, selectedIndex in ipairs(self.selectedIndices) do
+                if selectedIndex == index then
+                    table.remove(self.selectedIndices, i)
+                    found = true
+                    break
                 end
-                
-                local selectedMarker = (i == dropdown.selectedIndex) and " ✓" or ""
-                print("  " .. i .. ". " .. optionText .. selectedMarker)
             end
+            
+            if not found then
+                table.insert(self.selectedIndices, index)
+            end
+            
+            self:triggerEvent("selectionChange", self.selectedIndices, self:getSelectedValues())
+        else
+            -- Single selection mode
+            self.selectedIndex = index
+            self.selectedValue = self.options[index]
+            self:close()
+            self:triggerEvent("selectionChange", index, self.selectedValue)
         end
         
-        print("===")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return dropdown
+        return self
+    end
+    
+    dropdown.getSelectedValues = function(self)
+        if self.multiSelect then
+            local values = {}
+            for _, index in ipairs(self.selectedIndices) do
+                table.insert(values, self.options[index])
+            end
+            return values
+        else
+            return {self.selectedValue}
+        end
+    end
+    
+    dropdown.setOptions = function(self, options)
+        self.options = options
+        -- Reset selection
+        if self.multiSelect then
+            self.selectedIndices = {}
+        else
+            self.selectedIndex = 1
+            self.selectedValue = options[1] or nil
+        end
+        self:triggerEvent("optionsChange", options)
+        return self
     end
     
     return dropdown
@@ -873,188 +1294,89 @@ UltraUI.Components.Slider = function(params)
     
     -- Create base component
     local slider = UltraUI.Components.Base(params)
-    slider.type = "slider"
     
     -- Slider-specific properties
+    slider.value = params.value or 50
     slider.min = params.min or 0
     slider.max = params.max or 100
-    slider.value = params.value or slider.min
     slider.step = params.step or 1
     slider.orientation = params.orientation or "horizontal" -- horizontal, vertical
-    slider.showValue = params.showValue ~= false
-    slider.trackColor = params.trackColor or slider.style.colors.secondary
+    slider.thumbSize = params.thumbSize or 20
     slider.thumbColor = params.thumbColor or slider.style.colors.primary
-    slider.filledTrackColor = params.filledTrackColor or slider.style.colors.primary
-    slider.thumbSize = params.thumbSize or {width = 20, height = 20}
+    slider.thumbBorderColor = params.thumbBorderColor or UltraUI.Utils.Color.lighten(slider.thumbColor, 0.2)
+    slider.thumbBorderWidth = params.thumbBorderWidth or 0
+    slider.trackColor = params.trackColor or slider.style.colors.secondary
+    slider.trackHeight = params.trackHeight or 6
+    slider.fillColor = params.fillColor or slider.style.colors.primary
+    slider.showLabels = params.showLabels ~= false
+    slider.labelFormat = params.labelFormat or "%d"
+    slider.continuous = params.continuous ~= false -- Whether to update during drag or only on release
     
-    -- Get normalized value (0-1)
-    slider.getNormalizedValue = function()
-        return (slider.value - slider.min) / (slider.max - slider.min)
-    end
-    
-    -- Set value
-    slider.setValue = function(value)
-        -- Clamp value to min/max range
-        value = UltraUI.Utils.Math.clamp(value, slider.min, slider.max)
+    -- Set value with validation and constraint to range
+    slider.setValue = function(self, newValue)
+        -- Enforce min and max
+        newValue = math.max(self.min, math.min(self.max, newValue))
         
-        -- Apply step
-        if slider.step > 0 then
-            value = math.floor((value - slider.min) / slider.step + 0.5) * slider.step + slider.min
+        -- Apply step value
+        if self.step and self.step > 0 then
+            newValue = math.floor((newValue - self.min) / self.step + 0.5) * self.step + self.min
         end
         
-        -- Update value if changed
-        if value ~= slider.value then
-            slider.value = value
-            slider.triggerEvent("valueChange", value)
+        -- If the value changed, trigger event
+        if self.value ~= newValue then
+            self.value = newValue
+            self:triggerEvent("valueChange", newValue)
         end
         
-        return slider
+        return self
     end
     
-    -- Increment value
-    slider.increment = function(amount)
-        return slider.setValue(slider.value + (amount or slider.step))
+    -- Calculate percentage of value within range
+    slider.getValuePercent = function(self)
+        return (self.value - self.min) / (self.max - self.min)
     end
     
-    -- Decrement value
-    slider.decrement = function(amount)
-        return slider.setValue(slider.value - (amount or slider.step))
-    end
-    
-    -- Event handlers
-    slider.onValueChange = function(callback)
-        return slider.addEventListener("valueChange", callback)
-    end
-    
-    -- Override render
-    local baseRender = slider.render
-    slider.render = function()
-        if not slider.visible then
-            return
-        end
-        
-        print("\n--- Slider: " .. slider.id .. " ---")
-        print("Value: " .. slider.value .. " (Range: " .. slider.min .. " - " .. slider.max .. ")")
-        print("Step: " .. slider.step)
-        
-        -- Render a visual representation of the slider
-        local width = 30
-        local fillWidth = math.floor(width * slider.getNormalizedValue())
-        local sliderBar = ""
-        
-        for i = 1, width do
-            if i <= fillWidth then
-                sliderBar = sliderBar .. "■"
-            else
-                sliderBar = sliderBar .. "□"
-            end
-        end
-        
-        print(sliderBar)
-        print("---")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return slider
+    -- Format value according to labelFormat
+    slider.getFormattedValue = function(self)
+        return string.format(self.labelFormat, self.value)
     end
     
     return slider
 end
 
--- Create a Toggle (Switch/Checkbox) component
+-- Create a Toggle/Switch component
 UltraUI.Components.Toggle = function(params)
     params = params or {}
     params.type = "toggle"
     
     -- Set default size if not provided
-    params.size = params.size or {width = 50, height = 30}
+    params.size = params.size or {width = 60, height = 30}
     
     -- Create base component
     local toggle = UltraUI.Components.Base(params)
-    toggle.type = "toggle"
     
     -- Toggle-specific properties
-    toggle.checked = params.checked or false
-    toggle.disabled = params.disabled or false
+    toggle.value = params.value or false
     toggle.label = params.label
     toggle.labelPosition = params.labelPosition or "right" -- left, right
-    toggle.checkedColor = params.checkedColor or toggle.style.colors.primary
-    toggle.uncheckedColor = params.uncheckedColor or toggle.style.colors.secondary
+    toggle.onColor = params.onColor or toggle.style.colors.success
+    toggle.offColor = params.offColor or toggle.style.colors.secondary
     toggle.thumbColor = params.thumbColor or toggle.style.colors.foreground
-    toggle.borderRadius = params.borderRadius or toggle.style.cornerRadius or toggle.size.height / 2
-    toggle.style = params.style or "switch" -- switch, checkbox
-    toggle.animation = params.animation or "slide" -- slide, fade
+    toggle.thumbSize = params.thumbSize or toggle.size.height - 4
+    toggle.animationDuration = params.animationDuration or 0.2
+    toggle.cornerRadius = params.cornerRadius or toggle.style.cornerRadius
     
-    -- Toggle checked state
-    toggle.toggle = function()
-        if not toggle.disabled then
-            toggle.checked = not toggle.checked
-            toggle.triggerEvent("change", toggle.checked)
+    -- Toggle methods
+    toggle.setValue = function(self, value)
+        if self.value ~= value then
+            self.value = value
+            self:triggerEvent("valueChange", value)
         end
-        return toggle
+        return self
     end
     
-    -- Set checked state
-    toggle.setChecked = function(checked)
-        if toggle.checked ~= checked and not toggle.disabled then
-            toggle.checked = checked
-            toggle.triggerEvent("change", checked)
-        end
-        return toggle
-    end
-    
-    -- Set disabled state
-    toggle.setDisabled = function(disabled)
-        toggle.disabled = disabled
-        toggle.triggerEvent("disabledChange", disabled)
-        return toggle
-    end
-    
-    -- Event handlers
-    toggle.onChange = function(callback)
-        return toggle.addEventListener("change", callback)
-    end
-    
-    -- Override render
-    local baseRender = toggle.render
-    toggle.render = function()
-        if not toggle.visible then
-            return
-        end
-        
-        print("\n--- Toggle: " .. toggle.id .. " ---")
-        print("Type: " .. toggle.style)
-        if toggle.disabled then
-            print("State: Disabled")
-        else
-            print("State: " .. (toggle.checked and "Checked" or "Unchecked"))
-        end
-        
-        if toggle.style == "switch" then
-            if toggle.checked then
-                print("[■■■● ]")
-            else
-                print("[ ●■■■]")
-            end
-        else
-            -- Checkbox style
-            if toggle.checked then
-                print("[✓]")
-            else
-                print("[ ]")
-            end
-        end
-        
-        if toggle.label then
-            print("Label: " .. toggle.label)
-        end
-        print("---")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return toggle
+    toggle.toggle = function(self)
+        return self:setValue(not self.value)
     end
     
     return toggle
@@ -1070,119 +1392,68 @@ UltraUI.Components.Input = function(params)
     
     -- Create base component
     local input = UltraUI.Components.Base(params)
-    input.type = "input"
     
     -- Input-specific properties
     input.value = params.value or ""
-    input.placeholder = params.placeholder or "Enter text..."
+    input.placeholderText = params.placeholderText or "Enter text..."
+    input.placeholderColor = params.placeholderColor or UltraUI.Utils.Color.fromRGB(160, 160, 160)
     input.textColor = params.textColor or input.style.colors.foreground
     input.backgroundColor = params.backgroundColor or input.style.colors.secondary
-    input.borderRadius = params.borderRadius or input.style.cornerRadius or 8
-    input.borderColor = params.borderColor or input.style.colors.primary
+    input.borderRadius = params.borderRadius or input.style.cornerRadius
+    input.borderColor = params.borderColor or input.style.colors.secondary
     input.borderWidth = params.borderWidth or 1
-    input.fontSize = params.fontSize or input.style.fontSize or 14
-    input.textAlign = params.textAlign or "left" -- left, center, right
-    input.inputType = params.inputType or "text" -- text, password, number, email
-    input.maxLength = params.maxLength
+    input.focusBorderColor = params.focusBorderColor or input.style.colors.primary
+    input.padding = params.padding or 10
+    input.maxLength = params.maxLength or -1 -- -1 means no limit
+    input.inputType = params.inputType or "text" -- text, password, number, etc.
+    input.validation = params.validation -- Optional validation function
+    input.validationMessage = params.validationMessage or "Invalid input"
+    input.isValid = true
+    input.clearButtonVisible = params.clearButtonVisible ~= false
     input.readOnly = params.readOnly or false
-    input.disabled = params.disabled or false
-    input.leadingIcon = params.leadingIcon
-    input.trailingIcon = params.trailingIcon
     
-    -- Set value
-    input.setValue = function(value)
-        local oldValue = input.value
-        input.value = value or ""
-        
-        if input.maxLength and #input.value > input.maxLength then
-            input.value = string.sub(input.value, 1, input.maxLength)
+    -- Input methods
+    input.setValue = function(self, value)
+        if self.maxLength > 0 and #value > self.maxLength then
+            value = string.sub(value, 1, self.maxLength)
         end
         
-        if oldValue ~= input.value then
-            input.triggerEvent("valueChange", input.value)
+        if self.value ~= value then
+            self.value = value
+            self:validate()
+            self:triggerEvent("valueChange", value, self.isValid)
+            self:triggerEvent("textChange", value)
         end
         
-        return input
+        return self
     end
     
-    -- Clear value
-    input.clear = function()
-        return input.setValue("")
-    end
-    
-    -- Focus the input
-    input.focus = function()
-        if not input.disabled and not input.readOnly then
-            input.state.isFocused = true
-            input.triggerEvent("focus")
-        end
-        return input
-    end
-    
-    -- Blur (unfocus) the input
-    input.blur = function()
-        if input.state.isFocused then
-            input.state.isFocused = false
-            input.triggerEvent("blur")
-        end
-        return input
-    end
-    
-    -- Toggle disabled state
-    input.setDisabled = function(disabled)
-        input.disabled = disabled
-        input.triggerEvent("disabledChange", disabled)
-        return input
-    end
-    
-    -- Event handlers
-    input.onValueChange = function(callback)
-        return input.addEventListener("valueChange", callback)
-    end
-    
-    input.onFocus = function(callback)
-        return input.addEventListener("focus", callback)
-    end
-    
-    input.onBlur = function(callback)
-        return input.addEventListener("blur", callback)
-    end
-    
-    input.onSubmit = function(callback)
-        return input.addEventListener("submit", callback)
-    end
-    
-    -- Override render
-    local baseRender = input.render
-    input.render = function()
-        if not input.visible then
-            return
-        end
-        
-        print("\n--- Input: " .. input.id .. " ---")
-        print("Value: " .. (input.value ~= "" and input.value or "[empty]"))
-        print("Placeholder: " .. input.placeholder)
-        print("Type: " .. input.inputType)
-        
-        if input.disabled then
-            print("State: Disabled")
-        elseif input.readOnly then
-            print("State: Read-only")
-        elseif input.state.isFocused then
-            print("State: Focused")
+    input.validate = function(self)
+        if self.validation then
+            self.isValid = self.validation(self.value)
         else
-            print("State: Normal")
+            self.isValid = true
         end
         
-        if input.maxLength then
-            print("Character count: " .. #input.value .. "/" .. input.maxLength)
-        end
-        print("---")
+        self:triggerEvent("validationChange", self.isValid)
         
-        -- Call base render which will render all children
-        baseRender()
-        
-        return input
+        return self.isValid
+    end
+    
+    input.clear = function(self)
+        return self:setValue("")
+    end
+    
+    input.focus = function(self)
+        self.state.isFocused = true
+        self:triggerEvent("focus")
+        return self
+    end
+    
+    input.blur = function(self)
+        self.state.isFocused = false
+        self:triggerEvent("blur")
+        return self
     end
     
     return input
@@ -1191,125 +1462,219 @@ end
 -- Create a TabView component
 UltraUI.Components.TabView = function(params)
     params = params or {}
-    params.type = "tabview"
+    params.type = "tabView"
     
     -- Set default size if not provided
     params.size = params.size or {width = 400, height = 300}
     
     -- Create base component
     local tabView = UltraUI.Components.Base(params)
-    tabView.type = "tabview"
     
     -- TabView-specific properties
-    tabView.tabs = params.tabs or {}  -- Array of {title = "Tab 1", content = Container component}
+    tabView.tabs = params.tabs or {} -- Array of {id, title, content}
     tabView.activeTabIndex = params.activeTabIndex or 1
-    tabView.tabPosition = params.tabPosition or "top" -- top, bottom, left, right
-    tabView.tabBackgroundColor = params.tabBackgroundColor or tabView.style.colors.secondary
-    tabView.activeTabBackgroundColor = params.activeTabBackgroundColor or tabView.style.colors.background
-    tabView.tabTextColor = params.tabTextColor or tabView.style.colors.foreground
-    tabView.activeTabTextColor = params.activeTabTextColor or tabView.style.colors.primary
-    tabView.contentBackgroundColor = params.contentBackgroundColor or tabView.style.colors.background
     tabView.tabHeight = params.tabHeight or 40
-    tabView.borderRadius = params.borderRadius or tabView.style.cornerRadius or 8
-    tabView.hideTabBar = params.hideTabBar or false
+    tabView.tabBackgroundColor = params.tabBackgroundColor or tabView.style.colors.secondary
+    tabView.activeTabBackgroundColor = params.activeTabBackgroundColor or tabView.style.colors.primary
+    tabView.tabTextColor = params.tabTextColor or tabView.style.colors.foreground
+    tabView.activeTabTextColor = params.activeTabTextColor or tabView.style.colors.foreground
+    tabView.contentBackgroundColor = params.contentBackgroundColor or tabView.style.colors.background
+    tabView.borderRadius = params.borderRadius or tabView.style.cornerRadius
+    tabView.tabsPosition = params.tabsPosition or "top" -- top, bottom, left, right
+    tabView.tabsSpacing = params.tabsSpacing or 4
+    tabView.closableTabs = params.closableTabs or false
     
-    -- Add a tab
-    tabView.addTab = function(title, content)
-        table.insert(tabView.tabs, {
-            title = title,
-            content = content
-        })
-        tabView.triggerEvent("tabsChange", tabView.tabs)
-        return tabView
+    -- TabView methods
+    tabView.addTab = function(self, tab)
+        table.insert(self.tabs, tab)
+        self:triggerEvent("tabsChange", self.tabs)
+        return self
     end
     
-    -- Remove a tab
-    tabView.removeTab = function(index)
-        if index > 0 and index <= #tabView.tabs then
-            table.remove(tabView.tabs, index)
-            if tabView.activeTabIndex > index then
-                tabView.activeTabIndex = tabView.activeTabIndex - 1
-            elseif tabView.activeTabIndex == index then
-                tabView.activeTabIndex = math.min(index, #tabView.tabs)
+    tabView.removeTab = function(self, tabIndex)
+        if tabIndex > 0 and tabIndex <= #self.tabs then
+            table.remove(self.tabs, tabIndex)
+            
+            -- If the active tab was removed, select another tab
+            if self.activeTabIndex == tabIndex then
+                self.activeTabIndex = math.min(tabIndex, #self.tabs)
+                if self.activeTabIndex > 0 then
+                    self:triggerEvent("activeTabChange", self.activeTabIndex, self.tabs[self.activeTabIndex])
+                end
+            elseif self.activeTabIndex > tabIndex then
+                -- Adjust active tab index if a tab before it was removed
+                self.activeTabIndex = self.activeTabIndex - 1
             end
-            tabView.triggerEvent("tabsChange", tabView.tabs)
+            
+            self:triggerEvent("tabsChange", self.tabs)
         end
-        return tabView
+        return self
     end
     
-    -- Set active tab
-    tabView.setActiveTab = function(index)
-        if index > 0 and index <= #tabView.tabs and index ~= tabView.activeTabIndex then
-            local previousTab = tabView.activeTabIndex
-            tabView.activeTabIndex = index
-            tabView.triggerEvent("tabChange", index, previousTab, tabView.tabs[index])
+    tabView.setActiveTab = function(self, tabIndex)
+        if tabIndex > 0 and tabIndex <= #self.tabs and self.activeTabIndex ~= tabIndex then
+            self.activeTabIndex = tabIndex
+            self:triggerEvent("activeTabChange", tabIndex, self.tabs[tabIndex])
         end
-        return tabView
-    end
-    
-    -- Get active tab content
-    tabView.getActiveTabContent = function()
-        if tabView.activeTabIndex > 0 and tabView.activeTabIndex <= #tabView.tabs then
-            return tabView.tabs[tabView.activeTabIndex].content
-        end
-        return nil
-    end
-    
-    -- Event handlers
-    tabView.onTabChange = function(callback)
-        return tabView.addEventListener("tabChange", callback)
-    end
-    
-    -- Override render
-    local baseRender = tabView.render
-    tabView.render = function()
-        if not tabView.visible then
-            return
-        end
-        
-        print("\n=== TabView: " .. tabView.id .. " ===")
-        print("Tab count: " .. #tabView.tabs)
-        print("Active tab: " .. tabView.activeTabIndex)
-        print("Tab position: " .. tabView.tabPosition)
-        
-        -- Print tab headers
-        print("\nTabs:")
-        for i, tab in ipairs(tabView.tabs) do
-            local activeMarker = (i == tabView.activeTabIndex) and "*" or " "
-            print(activeMarker .. " " .. i .. ". " .. tab.title)
-        end
-        
-        -- Print active tab content
-        print("\nActive Tab Content:")
-        local activeContent = tabView.getActiveTabContent()
-        if activeContent then
-            activeContent.render()
-        else
-            print("[No content]")
-        end
-        
-        print("===")
-        
-        -- Call base render which will render all children
-        baseRender()
-        
-        return tabView
+        return self
     end
     
     return tabView
 end
 
--- Create a UI system
+-- Create Progress Bar component
+UltraUI.Components.ProgressBar = function(params)
+    params = params or {}
+    params.type = "progressBar"
+    
+    -- Set default size if not provided
+    params.size = params.size or {width = 200, height = 20}
+    
+    -- Create base component
+    local progressBar = UltraUI.Components.Base(params)
+    
+    -- ProgressBar-specific properties
+    progressBar.value = params.value or 0 -- 0 to 100
+    progressBar.min = params.min or 0
+    progressBar.max = params.max or 100
+    progressBar.fillColor = params.fillColor or progressBar.style.colors.primary
+    progressBar.backgroundColor = params.backgroundColor or progressBar.style.colors.secondary
+    progressBar.borderRadius = params.borderRadius or progressBar.style.cornerRadius
+    progressBar.borderColor = params.borderColor
+    progressBar.borderWidth = params.borderWidth or 0
+    progressBar.showText = params.showText ~= false
+    progressBar.textFormat = params.textFormat or "{value}%"
+    progressBar.textColor = params.textColor or progressBar.style.colors.foreground
+    progressBar.fillDirection = params.fillDirection or "leftToRight" -- leftToRight, rightToLeft, topToBottom, bottomToTop
+    progressBar.animated = params.animated ~= false
+    progressBar.animationDuration = params.animationDuration or 0.3
+    
+    -- ProgressBar methods
+    progressBar.setValue = function(self, value)
+        -- Constrain to range
+        value = math.max(self.min, math.min(self.max, value))
+        
+        if self.value ~= value then
+            self.value = value
+            self:triggerEvent("valueChange", value)
+        end
+        
+        return self
+    end
+    
+    progressBar.getPercentage = function(self)
+        return (self.value - self.min) / (self.max - self.min) * 100
+    end
+    
+    progressBar.getFormattedText = function(self)
+        local percent = math.floor(self:getPercentage() + 0.5)
+        return self.textFormat:gsub("{value}", tostring(percent))
+            :gsub("{min}", tostring(self.min))
+            :gsub("{max}", tostring(self.max))
+            :gsub("{current}", tostring(self.value))
+    end
+    
+    return progressBar
+end
+
+-- Create an Image component
+UltraUI.Components.Image = function(params)
+    params = params or {}
+    params.type = "image"
+    
+    -- Set default size if not provided
+    params.size = params.size or {width = 100, height = 100}
+    
+    -- Create base component
+    local image = UltraUI.Components.Base(params)
+    
+    -- Image-specific properties
+    image.imageId = params.imageId -- Roblox asset ID
+    image.url = params.url -- For web images (in actual Roblox this would need handling)
+    image.cornerRadius = params.cornerRadius or 0
+    image.backgroundColor = params.backgroundColor or UltraUI.Utils.Color.Presets.TRANSPARENT
+    image.scaleMode = params.scaleMode or "fit" -- fit, fill, stretch, tile
+    image.borderColor = params.borderColor
+    image.borderWidth = params.borderWidth or 0
+    image.tint = params.tint -- Optional color tint
+    image.tintIntensity = params.tintIntensity or 0.5
+    image.shadow = params.shadow -- Optional shadow
+    
+    -- Image methods
+    image.setImageId = function(self, imageId)
+        self.imageId = imageId
+        self:triggerEvent("imageChange", imageId)
+        return self
+    end
+    
+    image.setUrl = function(self, url)
+        self.url = url
+        self:triggerEvent("imageChange", url)
+        return self
+    end
+    
+    return image
+end
+
+-- Create a Modal component
+UltraUI.Components.Modal = function(params)
+    params = params or {}
+    params.type = "modal"
+    
+    -- Set default size if not provided
+    params.size = params.size or {width = 400, height = 300}
+    
+    -- Create base component with Container as parent
+    local modal = UltraUI.Components.Container(params)
+    
+    -- Modal-specific properties
+    modal.overlayColor = params.overlayColor or UltraUI.Utils.Color.fromRGB(0, 0, 0, 0.5)
+    modal.closeOnClickOutside = params.closeOnClickOutside ~= false
+    modal.showCloseButton = params.showCloseButton ~= false
+    modal.animation = params.animation or "fade" -- fade, scale, slideDown
+    modal.isOpen = false
+    modal.beforeCloseCallback = nil
+    
+    -- Modal methods
+    modal.open = function(self)
+        if not self.isOpen then
+            self.isOpen = true
+            self.visible = true
+            self:triggerEvent("open")
+        end
+        return self
+    end
+    
+    modal.close = function(self)
+        if self.isOpen then
+            if self.beforeCloseCallback and not self.beforeCloseCallback() then
+                return self -- Don't close if callback returns false
+            end
+            
+            self.isOpen = false
+            self.visible = false
+            self:triggerEvent("close")
+        end
+        return self
+    end
+    
+    modal.setBeforeCloseCallback = function(self, callback)
+        self.beforeCloseCallback = callback
+        return self
+    end
+    
+    return modal
+end
+
+-- UI creation and management
 UltraUI.CreateUI = function(params)
     params = params or {}
     
     local ui = {
-        id = params.id or "ui_" .. UltraUI.Utils.String.generateId(),
+        id = params.id or UltraUI.Utils.String.generateId("ui_"),
         title = params.title or "UltraUI Application",
         style = params.style or UltraUI.Styles.Modern,
-        root = nil,
-        activeWindows = {},
-        components = {}
+        activeWindows = {}
     }
     
     -- Create root container
@@ -1340,14 +1705,16 @@ UltraUI.CreateUI = function(params)
             position = windowParams.position or {x = 100, y = 100},
             backgroundColor = windowParams.backgroundColor or ui.style.colors.background,
             borderRadius = windowParams.borderRadius or ui.style.cornerRadius,
-            shadow = windowParams.shadow or ui.style.shadow
+            shadow = windowParams.shadow or ui.style.shadow,
+            titleBarVisible = true,
+            dragEnabled = true
         })
         
         -- Add to active windows
         ui.activeWindows[windowId] = window
         
         -- Add to root
-        ui.root.addChild(window)
+        ui.root:addChild(window)
         
         return window
     end
@@ -1379,7 +1746,7 @@ UltraUI.CreateUI = function(params)
             size = {width = 260, height = 80},
             textColor = ui.style.colors.foreground
         })
-        dialog.addChild(messageLabel)
+        dialog:addChild(messageLabel)
         
         -- Add OK button
         local okButton = UltraUI.Components.Button({
@@ -1389,13 +1756,13 @@ UltraUI.CreateUI = function(params)
             backgroundColor = colors[type]
         })
         
-        okButton.onClick(function()
+        okButton:onClick(function()
             -- Remove the dialog when OK is clicked
-            ui.root.removeChild(dialog.id)
+            ui.root:removeChild(dialog.id)
             ui.activeWindows[dialog.id] = nil
         end)
         
-        dialog.addChild(okButton)
+        dialog:addChild(okButton)
         
         -- Render the UI
         ui.render()
@@ -1405,9 +1772,9 @@ UltraUI.CreateUI = function(params)
     
     -- Render the UI
     ui.render = function()
-        print("\n======= UltraUI System: " .. ui.title .. " =======")
-        ui.root.render()
-        print("\n=======")
+        UltraUI.Utils.Logger.info("\n======= UltraUI System: " .. ui.title .. " =======")
+        ui.root:render()
+        UltraUI.Utils.Logger.info("\n=======")
         return ui
     end
     
@@ -1439,25 +1806,125 @@ UltraUI.CreateUI = function(params)
                 })
                 
                 if item.onClick then
-                    button.onClick(item.onClick)
+                    button:onClick(item.onClick)
                 end
                 
-                menu.addChild(button)
+                menu:addChild(button)
             end
         end
         
         -- Add to root if not specified otherwise
         if menuParams.parent then
-            menuParams.parent.addChild(menu)
+            menuParams.parent:addChild(menu)
         else
-            ui.root.addChild(menu)
+            ui.root:addChild(menu)
         end
         
         return menu
     end
     
+    -- Create a form (shorthand)
+    ui.createForm = function(formParams)
+        formParams = formParams or {}
+        formParams.style = formParams.style or ui.style
+        
+        local form = UltraUI.Components.Container({
+            id = formParams.id or "form_" .. UltraUI.Utils.String.generateId(),
+            title = formParams.title,
+            style = formParams.style,
+            size = formParams.size or {width = 400, height = 400},
+            position = formParams.position or {x = 0, y = 0},
+            backgroundColor = formParams.backgroundColor or ui.style.colors.background,
+            borderRadius = formParams.borderRadius or ui.style.cornerRadius,
+            layout = "vertical",
+            padding = 10,
+            spacing = 10
+        })
+        
+        local formFields = {}
+        
+        -- Add fields
+        if formParams.fields then
+            for _, field in ipairs(formParams.fields) do
+                -- Create label for the field
+                local label = UltraUI.Components.Label({
+                    text = field.label,
+                    size = {width = form.size.width - 20, height = 20},
+                    textColor = ui.style.colors.foreground
+                })
+                form:addChild(label)
+                
+                -- Create the input based on field type
+                local input
+                if field.type == "text" or field.type == "password" or field.type == "number" then
+                    input = UltraUI.Components.Input({
+                        placeholderText = field.placeholder or "",
+                        size = {width = form.size.width - 20, height = 40},
+                        inputType = field.type,
+                        validation = field.validation
+                    })
+                elseif field.type == "dropdown" then
+                    input = UltraUI.Components.Dropdown({
+                        options = field.options or {},
+                        size = {width = form.size.width - 20, height = 40},
+                        placeholderText = field.placeholder or "Select..."
+                    })
+                elseif field.type == "toggle" then
+                    input = UltraUI.Components.Toggle({
+                        value = field.value or false,
+                        size = {width = 60, height = 30}
+                    })
+                end
+                
+                if input then
+                    form:addChild(input)
+                    formFields[field.name] = input
+                end
+            end
+        end
+        
+        -- Add submit button if needed
+        if formParams.submitButton then
+            local submitButton = UltraUI.Components.Button({
+                text = formParams.submitButton.text or "Submit",
+                size = {width = form.size.width - 20, height = 40},
+                backgroundColor = ui.style.colors.primary
+            })
+            
+            if formParams.submitButton.onClick then
+                submitButton:onClick(function()
+                    -- Collect all form values
+                    local formValues = {}
+                    for name, field in pairs(formFields) do
+                        formValues[name] = field.value
+                    end
+                    
+                    formParams.submitButton.onClick(formValues)
+                end)
+            end
+            
+            form:addChild(submitButton)
+        end
+        
+        -- Add to parent if specified
+        if formParams.parent then
+            formParams.parent:addChild(form)
+        else
+            ui.root:addChild(form)
+        end
+        
+        return form
+    end
+    
     return ui
 end
+
+-- Initialize default values
+UltraUI.Config.DefaultStyle = UltraUI.Styles.Modern
+UltraUI.Config.DefaultAnimation = UltraUI.Animations.fadeIn()
+
+-- Provide shorthand for creating UI
+UltraUI.CreateApp = UltraUI.CreateUI
 
 -- Return the library
 return UltraUI
