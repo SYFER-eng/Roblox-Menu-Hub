@@ -7,12 +7,12 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 -- Load Modules
-local Config = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/reponame/main/config.lua"))()
+local Config = loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Menu/things/config.lua"))()
 local Utilities = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/reponame/main/utilities.lua"))()
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/reponame/main/ui_library.lua"))()
 local AimbotModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Menu/things/aimbot.lua"))()
-local ESPModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/reponame/main/esp.lua"))()
-local GUIModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/reponame/main/gui.lua"))()
+local ESPModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Menu/things/esp.lua"))()
+local GUIModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/SYFER-eng/Roblox-Menu-Hub/refs/heads/main/Menu/things/gui.lua"))()
 
 -- Check if already loaded to prevent multiple instances
 if _G.AimbotESPLoaded then
